@@ -1,0 +1,13 @@
+{
+    "terminal": {
+        "default_name_color": "cyan"
+    },
+    "sessions": {
+        "max_chats": 5
+    },
+    "context": {
+        "max_context_messages": 20,
+        "max_historical_chats": 4,
+        "max_history_chars": 10000
+    }
+}
