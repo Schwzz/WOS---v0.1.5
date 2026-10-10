@@ -1,0 +1,283 @@
+{
+    "session_id": "session_004",
+    "title": "Chat 4",
+    "created": "2026-10-09T11:40:46",
+    "updated": "2026-10-10T12:57:09",
+    "messages": [
+        {
+            "role": "user",
+            "content": "hi shiorel"
+        },
+        {
+            "role": "assistant",
+            "content": "Hello! How can I assist you today?"
+        },
+        {
+            "role": "user",
+            "content": "Forget that I am learning Python"
+        },
+        {
+            "role": "assistant",
+            "content": "I couldn't find that saved memory, so nothing was deleted."
+        },
+        {
+            "role": "user",
+            "content": "Forget that I am learning Java"
+        },
+        {
+            "role": "assistant",
+            "content": "I've forgotten that memory: I am learning Java."
+        },
+        {
+            "role": "user",
+            "content": "Hey Shiorel, are you there?"
+        },
+        {
+            "role": "assistant",
+            "content": "I am right here, Swartz. Just quietly keeping you company. What's on your mind?"
+        },
+        {
+            "role": "user",
+            "content": "hi"
+        },
+        {
+            "role": "assistant",
+            "content": "Hi again, Swartz. How are you holding up?"
+        },
+        {
+            "role": "user",
+            "content": "Remember that I am learning Python."
+        },
+        {
+            "role": "assistant",
+            "content": "I'll remember that. I am learning Python"
+        },
+        {
+            "role": "user",
+            "content": "Remember that I am learning Java."
+        },
+        {
+            "role": "assistant",
+            "content": "I'll remember that. I am learning Java"
+        },
+        {
+            "role": "user",
+            "content": "Forget that fact_learning_java"
+        },
+        {
+            "role": "assistant",
+            "content": "I've forgotten that memory: I am learning Java."
+        },
+        {
+            "role": "user",
+            "content": "Forget that fact_learning_python"
+        },
+        {
+            "role": "assistant",
+            "content": "I've forgotten that memory: I am learning Python."
+        },
+        {
+            "role": "user",
+            "content": "Remember that I am learning Java."
+        },
+        {
+            "role": "assistant",
+            "content": "I'll remember that. I am learning Java"
+        },
+        {
+            "role": "user",
+            "content": "Remember that I am learning Python."
+        },
+        {
+            "role": "assistant",
+            "content": "I'll remember that. I am learning Python"
+        },
+        {
+            "role": "user",
+            "content": "What am I learning?"
+        },
+        {
+            "role": "assistant",
+            "content": "You're learning Python."
+        },
+        {
+            "role": "user",
+            "content": "Do you remember what I am studying?"
+        },
+        {
+            "role": "assistant",
+            "content": "You're learning Python."
+        },
+        {
+            "role": "user",
+            "content": "What programming language am I learning besides Python?"
+        },
+        {
+            "role": "assistant",
+            "content": "You're learning Python."
+        },
+        {
+            "role": "user",
+            "content": "What am I learning?"
+        },
+        {
+            "role": "assistant",
+            "content": "You're learning Python."
+        },
+        {
+            "role": "user",
+            "content": "What am I studying?"
+        },
+        {
+            "role": "assistant",
+            "content": "You're learning Python."
+        },
+        {
+            "role": "user",
+            "content": "What programming language am I learning besides Python?"
+        },
+        {
+            "role": "assistant",
+            "content": "Well, based on what I have stored, I only know that you're learning Python. If you've picked up another language recently, you might need to remind me about it."
+        },
+        {
+            "role": "user",
+            "content": "What am I learning besides Java?"
+        },
+        {
+            "role": "assistant",
+            "content": "You're learning Python."
+        },
+        {
+            "role": "user",
+            "content": "Remember that I am learning Java"
+        },
+        {
+            "role": "assistant",
+            "content": "I'll remember that. I am learning Java"
+        },
+        {
+            "role": "user",
+            "content": "Remember that I am learning game development"
+        },
+        {
+            "role": "assistant",
+            "content": "I'll remember that. I am learning game development"
+        },
+        {
+            "role": "user",
+            "content": "What am I learning?"
+        },
+        {
+            "role": "assistant",
+            "content": "Let's see... You're learning Python and Java, and you've also been diving into game development. Quite a lot on your plate, Swartz. Making sure you have all your bases covered, or are you trying to build your own game from scratch?"
+        },
+        {
+            "role": "user",
+            "content": "what am i learning besides python?"
+        },
+        {
+            "role": "assistant",
+            "content": "Besides Python, you're learning Java and diving into game development. Balancing all of that keeps you pretty busy, doesn't it?"
+        },
+        {
+            "role": "user",
+            "content": "What am I leaning besides Java?"
+        },
+        {
+            "role": "assistant",
+            "content": "Besides Java, you're learning Python and exploring game development. You certainly like to keep your mind occupied, Swartz."
+        },
+        {
+            "role": "user",
+            "content": "Am I learning Rust?"
+        },
+        {
+            "role": "assistant",
+            "content": "Not that I know of. As far as I'm aware, your plate is full enough with Python, Java, and game development. Are you thinking about adding Rust to the mix, or just testing me?"
+        },
+        {
+            "role": "user",
+            "content": "What is my favorite game?"
+        },
+        {
+            "role": "assistant",
+            "content": "That's one thing you haven't told me yet, Swartz. You've mentioned diving into game development, but you're keeping your favorite games a secret so far. What is it?"
+        },
+        {
+            "role": "user",
+            "content": "I'll tell you later ;3"
+        },
+        {
+            "role": "assistant",
+            "content": "Keeping me in suspense, are you? I suppose I can wait... though I am rather curious. Let me know whenever you're ready to share, Swartz."
+        },
+        {
+            "role": "user",
+            "content": "What am I learning besides Python?"
+        },
+        {
+            "role": "assistant",
+            "content": "Besides Python, you're learning Java and diving into game development. You wouldn't happen to be planning to use those skills to finally make that mystery favorite game of yours, would you?"
+        },
+        {
+            "role": "user",
+            "content": "hi"
+        },
+        {
+            "role": "assistant",
+            "content": "Hello, Swartz. How are you doing today? Working on any more code, or just taking it easy?"
+        },
+        {
+            "role": "user",
+            "content": "helloooo"
+        },
+        {
+            "role": "assistant",
+            "content": "Well, hello there. Echoing your greetings now, are we? How are you spending your day, Swartz?"
+        },
+        {
+            "role": "user",
+            "content": "/character"
+        },
+        {
+            "role": "assistant",
+            "content": "Hmm? Did you mean to use a command, Swartz? I'm right here. \n\nIs something on your mind, or are you just testing out the system?"
+        },
+        {
+            "role": "user",
+            "content": "/character list"
+        },
+        {
+            "role": "assistant",
+            "content": "It looks like you're trying to use some system commands, but I don't really have access to a list of characters or those kinds of controls from my end. \n\nIf you're just testing things out, that's fine—though I'm much better at chatting than processing slash commands. What's on your mind, Swartz?"
+        },
+        {
+            "role": "user",
+            "content": "/character switch <id>"
+        },
+        {
+            "role": "assistant",
+            "content": "Still trying out those commands, I see? Trust me, switching to a different companion won't give you much—I'm quite fond of our chats just the way they are. \n\nAre you just having fun seeing how I react, or is there something specific you're trying to do?"
+        },
+        {
+            "role": "user",
+            "content": "sorry my bad, i thought i added these /commands"
+        },
+        {
+            "role": "assistant",
+            "content": "No need to apologize, Swartz. It's easy to get mixed up with different commands when you're jumping between projects or tools. \n\nSo, since we're back to regular chatting—how has your day been going? Still finding time to write some Python or Java code, or taking a break from the screen?"
+        },
+        {
+            "role": "user",
+            "content": "brb ok"
+        },
+        {
+            "role": "assistant",
+            "content": "Take your time, Swartz. I'll be right here whenever you get back."
+        }
+    ],
+    "provider": "cloud",
+    "model": "gemini-3.5-flash-lite",
+    "character_id": "shiorel"
+}
