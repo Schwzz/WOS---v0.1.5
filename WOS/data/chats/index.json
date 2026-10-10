@@ -1,0 +1,29 @@
+[
+    {
+        "session_id": "session_003",
+        "title": "Test Chat",
+        "created": "2026-10-09T09:47:57",
+        "updated": "2026-10-09T10:54:52",
+        "provider": "cloud",
+        "model": "gemini-3.5-flash-lite",
+        "character_id": "shiorel"
+    },
+    {
+        "session_id": "session_004",
+        "title": "Chat 4",
+        "created": "2026-10-09T11:40:46",
+        "updated": "2026-10-09T12:39:23",
+        "provider": "cloud",
+        "model": "gemini-3.5-flash-lite",
+        "character_id": "shiorel"
+    },
+    {
+        "session_id": "session_005",
+        "title": "Chat 5",
+        "created": "2026-10-09T12:19:10",
+        "updated": "2026-10-09T12:25:06",
+        "provider": "cloud",
+        "model": "gemini-3.5-flash-lite",
+        "character_id": "shiorel"
+    }
+]

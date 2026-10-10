@@ -1,0 +1,27 @@
+{
+    "session_id": "session_005",
+    "title": "Chat 5",
+    "created": "2026-10-09T12:19:10",
+    "updated": "2026-10-09T12:25:06",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Hi Shiorel, say hello."
+        },
+        {
+            "role": "assistant",
+            "content": "Hello, Swartz. It's good to see you. How has your day been going—making any progress with Java today, or just taking it easy?"
+        },
+        {
+            "role": "user",
+            "content": "yup im just testing things... you better get used to me saying random shits. just for the sake of testing... i ahte testing phase..."
+        },
+        {
+            "role": "assistant",
+            "content": "Fair enough, Swartz. Testing phases are tedious, but someone's gotta do the heavy lifting. \n\nGo ahead and throw whatever random things you want my way—I'm ready for it. Consider it good practice for both of us."
+        }
+    ],
+    "provider": "cloud",
+    "model": "gemini-3.5-flash-lite",
+    "character_id": "shiorel"
+}
