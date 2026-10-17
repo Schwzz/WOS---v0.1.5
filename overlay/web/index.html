@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WOS Overlay</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="frame">
+    <section class="stage-wrap">
+      <canvas id="stage" aria-label="Animated geometric core"></canvas>
+      <header class="hud top">
+        <span id="hud-title">sage.core</span>
+        <span id="hud-state">idle</span>
+      </header>
+      <button id="btn-close" class="chrome" title="Close" aria-label="Close">&times;</button>
+    </section>
+
+    <section id="chat" class="chat" hidden>
+      <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
+      <form id="chat-form" class="chat-form" autocomplete="off">
+        <input id="chat-input" type="text" maxlength="2000" placeholder="message" aria-label="Message">
+        <button id="chat-send" type="submit">send</button>
+      </form>
+    </section>
+
+    <footer class="console">
+      <div class="readout">
+        <div id="line-a">standing by</div>
+        <div id="line-b">0x0000 &middot; sync 1.00</div>
+        <div id="line-c"></div>
+      </div>
+      <nav class="controls" aria-label="Overlay controls">
+        <button id="btn-voice" type="button" aria-pressed="false">voice: off</button>
+        <button id="btn-chat" type="button" aria-expanded="false">chat</button>
+      </nav>
+      <nav class="states" aria-label="Preview state">
+        <button data-state="idle" class="on"><i>1</i>idle</button>
+        <button data-state="thinking"><i>2</i>thinking</button>
+        <button data-state="listening"><i>3</i>listening</button>
+        <button data-state="speaking"><i>4</i>speaking</button>
+      </nav>
+    </footer>
+  </main>
+  <script src="sage.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>

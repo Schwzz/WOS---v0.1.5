@@ -1,5 +1,8 @@
 {
     "user_name": "",
+    "overlay": {
+        "port": 47615
+    },
     "tts": {
         "enabled": false,
         "voice_id": "5a62b02a53954e13ad0d9a90464ef9b0",

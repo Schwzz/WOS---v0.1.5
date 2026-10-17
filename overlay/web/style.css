@@ -1,0 +1,158 @@
+:root {
+  --bg: #000;
+  --red: #ff4020;
+  --amber: #ff8c32;
+  --cyan: #aaebff;
+  --dim: rgba(170, 235, 255, 0.45);
+  --line: rgba(255, 64, 32, 0.35);
+  --mono: "Cascadia Mono", "Consolas", "Lucida Console", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; height: 100vh; height: 100dvh; width: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--dim);
+  cursor: default;
+}
+
+.frame {
+  height: 100%;
+  min-width: 0; min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+}
+
+.stage-wrap {
+  position: relative;
+  flex: 1 1 0;            /* take whatever height the console leaves */
+  min-height: 96px; min-width: 0;
+  display: grid; place-items: center;
+  container-type: size;   /* lets the canvas size itself from this box */
+  overflow: hidden;
+}
+/* Largest centred square that fits the stage area, in both axes */
+#stage {
+  display: block;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+}
+
+/* Corner brackets: mark the working area of the core */
+.stage-wrap::before, .stage-wrap::after {
+  content: ""; position: absolute; width: 14px; height: 14px;
+  border: 1px solid var(--amber); pointer-events: none; opacity: .7;
+}
+.stage-wrap::before { left: 8px; bottom: 8px; border-width: 0 0 1px 1px; }
+.stage-wrap::after  { right: 8px; bottom: 8px; border-width: 0 1px 1px 0; }
+
+.hud {
+  position: absolute; left: 12px; right: 34px; display: flex;
+  justify-content: space-between; pointer-events: none; letter-spacing: .08em;
+}
+.hud.top { top: 10px; }
+#hud-state { color: var(--cyan); }
+
+.chrome {
+  position: absolute; top: 4px; right: 6px; width: 20px; height: 20px;
+  background: none; border: 0; color: var(--dim);
+  font: inherit; font-size: 15px; line-height: 1; cursor: pointer;
+}
+.chrome:hover, .chrome:focus-visible { color: var(--red); outline: none; }
+
+.console {
+  flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px;
+  padding: 8px 12px 10px; border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.readout div { line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#line-a { color: var(--cyan); }
+
+.states { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.states button {
+  font: inherit; color: var(--dim); background: none;
+  border: 1px solid rgba(255, 64, 32, 0.25); padding: 5px 0 5px;
+  min-width: 0; overflow: hidden; white-space: nowrap;
+  cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+}
+.states button i {
+  font-style: normal; color: var(--amber); opacity: .6; margin-right: 4px;
+}
+.states button:hover { color: var(--cyan); border-color: var(--amber); }
+.states button:focus-visible { outline: 1px solid var(--cyan); outline-offset: 1px; }
+.states button.on {
+  color: #fff; border-color: var(--red);
+  background: rgba(255, 64, 32, 0.14);
+}
+
+/* Narrow windows: drop the key hints, keep full state names */
+@media (max-width: 330px) {
+  .states { gap: 4px; }
+  .states button i { display: none; }
+  .console { padding-left: 8px; padding-right: 8px; }
+}
+/* Short windows: keep the core large, trim the console */
+@media (max-height: 340px) {
+  #line-b { display: none; }
+  .console { gap: 6px; padding-top: 6px; padding-bottom: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .states button { transition: none; }
+}
+
+/* ---- WOS-Overlay additions: controls, chat panel, link state ---- */
+.controls { display: none; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+body.linked .controls { display: grid; }
+body.linked .states { display: none; }   /* real state replaces the preview buttons */
+
+.controls button, .chat-form button {
+  font: inherit; color: var(--dim); background: none;
+  border: 1px solid rgba(255, 64, 32, 0.25); padding: 5px 8px;
+  min-width: 0; overflow: hidden; white-space: nowrap;
+  cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+}
+.controls button:hover, .chat-form button:hover { color: var(--cyan); border-color: var(--amber); }
+.controls button:focus-visible, .chat-form button:focus-visible { outline: 1px solid var(--cyan); outline-offset: 1px; }
+.controls button.on { color: #fff; border-color: var(--red); background: rgba(255, 64, 32, 0.14); }
+.controls button.warn { border-color: var(--amber); }
+.chat-form button:disabled { opacity: .4; cursor: default; }
+
+#line-c { color: var(--dim); opacity: .8; }
+body.expanded #line-c { display: none; }
+body.offline #hud-state { color: var(--red); }
+
+.chat {
+  flex: 0 0 240px; display: flex; flex-direction: column; min-height: 0;
+  border-top: 1px solid var(--line);
+}
+.chat[hidden] { display: none; }
+.chat-log {
+  flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  user-select: text; -webkit-user-select: text; cursor: text;
+  scrollbar-width: thin; scrollbar-color: rgba(255, 64, 32, 0.4) transparent;
+}
+.msg { line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg b { font-weight: normal; color: var(--amber); margin-right: 6px; }
+.msg.assistant b { color: var(--cyan); }
+.msg span { color: rgba(245, 252, 255, 0.85); }
+.msg.error b, .msg.error span { color: var(--red); }
+.msg.pending { opacity: .55; }
+.chat-form {
+  display: flex; gap: 6px; padding: 6px 12px 8px;
+  border-top: 1px solid rgba(255, 64, 32, 0.2);
+}
+.chat-form input {
+  flex: 1 1 0; min-width: 0; font: inherit; color: #fff;
+  background: rgba(255, 64, 32, 0.06); border: 1px solid rgba(255, 64, 32, 0.25);
+  padding: 5px 6px; outline: none; user-select: text; -webkit-user-select: text; cursor: text;
+}
+.chat-form input:focus { border-color: var(--amber); }

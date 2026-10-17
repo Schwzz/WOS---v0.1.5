@@ -1,0 +1,6 @@
+requests
+python-dotenv
+google-genai
+httpx
+# Optional: the desktop window. Without it the overlay opens in your browser.
+pywebview>=5.0

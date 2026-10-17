@@ -246,11 +246,18 @@ DEFAULT_TTS_SETTINGS = {
     "model": "s2.1-pro-free"
 }
 
+# Desktop overlay (WOS-Overlay). Passed through like "tts": a damaged value
+# must never stop WOS, so core.overlay validates it and falls back.
+DEFAULT_OVERLAY_SETTINGS = {
+    "port": 47615
+}
+
 
 def load_settings():
     settings = json.loads(json.dumps(DEFAULT_SETTINGS))
     settings["user_name"] = ""
     settings["tts"] = dict(DEFAULT_TTS_SETTINGS)
+    settings["overlay"] = dict(DEFAULT_OVERLAY_SETTINGS)
 
     try:
         with SETTINGS_PATH.open("r", encoding="utf-8-sig") as file:
@@ -279,6 +286,7 @@ def load_settings():
 
     settings["user_name"] = saved_settings.get("user_name", "")
     settings["tts"] = saved_settings.get("tts", settings["tts"])
+    settings["overlay"] = saved_settings.get("overlay", settings["overlay"])
 
     color = settings["terminal"]["default_name_color"]
     if color not in {

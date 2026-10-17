@@ -85,6 +85,7 @@ from core.help_text import (
     suggest_topic,
 )
 from core.tts import FishAudioSpeaker
+from core.overlay import OverlayBackend, OverlayServer, overlay_port
 
 
 # ------------------------------
@@ -1485,7 +1486,26 @@ try:
 except (ValueError, OSError):
     tts_speaker = FishAudioSpeaker(None, notify=print)
 
+# Shared access to this one session and speaker for the desktop overlay.
+overlay_backend = OverlayBackend(lambda: session, tts_speaker, notify=print)
+tts_speaker.listener = overlay_backend.on_speech_event
+overlay_server = None
+
+if "--overlay" in sys.argv:
+    try:
+        overlay_server = OverlayServer(
+            overlay_backend,
+            port=overlay_port(load_settings().get("overlay")),
+        )
+        overlay_server.start()
+    except (ValueError, OSError) as error:
+        overlay_server = None
+        print(f"WOS: The desktop overlay could not start: {error}")
+
 while True:
+    # The previous command is finished; let the overlay use the session.
+    overlay_backend.release_command()
+
     try:
         message = input("You: ").strip()
     except (EOFError, KeyboardInterrupt):
@@ -1495,6 +1515,8 @@ while True:
 
     if not message:
         continue
+
+    overlay_backend.hold_command()
 
     command = message.lower()
 
@@ -1512,6 +1534,10 @@ while True:
 
     if command == "/restart":
         print("WOS: Restarting...")
+
+        if overlay_server is not None:
+            overlay_server.close()  # free the port for the new process
+
         restart_args = [sys.executable] + sys.argv
 
         if os.name == "nt":
@@ -1624,7 +1650,7 @@ while True:
         else:
             forget_request = f"Forget that {target}"
 
-        reply = session.send_message(forget_request)
+        reply = overlay_backend.send_message(forget_request, "terminal")
 
         if reply is None:
             print("WOS: The memory operation did not return a response.")
@@ -1660,7 +1686,7 @@ while True:
         print(problem)
         continue
 
-    reply = session.send_message(message)
+    reply = overlay_backend.send_message(message, "terminal")
 
     if reply is None:
         print("WOS: The model did not return a response.")

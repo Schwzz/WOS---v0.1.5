@@ -15,9 +15,11 @@ when a request is made, so a missing httpx cannot break startup.
 """
 import atexit
 import os
+import sys
 import tempfile
 import threading
 import time
+from array import array
 
 from core.config import DEFAULT_TTS_SETTINGS
 
@@ -181,6 +183,57 @@ def synthesize(text, api_key, voice_id, model, post=None):
     return normalize_wav(audio)
 
 
+def wav_envelope(wav, fps=50):
+    """Loudness over time of the audio that is about to be played.
+
+    Takes a WAV that normalize_wav() accepted and returns
+    {"fps", "duration", "levels"}: one RMS value per 1/fps second window,
+    scaled so the loudest window is 1.0. The desktop overlay animates from
+    these numbers, so the avatar follows the real generated speech. Only
+    16-bit PCM is analysed; any other format gives an empty "levels" list
+    (the speech still plays) and never raises.
+    """
+    empty = {"fps": fps, "duration": 0.0, "levels": []}
+
+    try:
+        channels = int.from_bytes(wav[22:24], "little")
+        rate = int.from_bytes(wav[24:28], "little")
+        bits = int.from_bytes(wav[34:36], "little")
+
+        if bits != 16 or channels < 1 or rate < 1:
+            return empty
+
+        data = bytes(wav[_WAV_HEADER_SIZE:])
+        samples = array("h")
+        samples.frombytes(data[: len(data) // 2 * 2])
+
+        if sys.byteorder == "big":
+            samples.byteswap()
+
+        frames = len(samples) // channels
+        window = max(1, rate // fps) * channels
+        levels = []
+
+        for start in range(0, len(samples), window):
+            chunk = samples[start:start + window]
+            levels.append(
+                (sum(value * value for value in chunk) / len(chunk)) ** 0.5
+            )
+
+        peak = max(levels) if levels else 0
+
+        return {
+            "fps": fps,
+            "duration": frames / rate,
+            "levels": [
+                round(level / peak, 3) if peak > 0 else 0.0
+                for level in levels
+            ],
+        }
+    except Exception:
+        return empty
+
+
 class WinsoundPlayer:
     """Plays a WAV file on Windows with the standard library."""
 
@@ -209,7 +262,7 @@ class FishAudioSpeaker:
     """Speaks replies with Fish Audio. Every failure is contained here."""
 
     def __init__(self, tts_settings=None, post=None, player=None,
-                 notify=print):
+                 notify=print, listener=None):
         config = load_tts_config(tts_settings)
 
         self.enabled = config["enabled"]
@@ -220,16 +273,55 @@ class FishAudioSpeaker:
         self._player = player if player is not None else WinsoundPlayer()
         self._notify = notify
 
+        # Optional callback listener(event, generation, **info) used by the
+        # desktop overlay. Events: "queued", "start" (audio is about to
+        # play, with its envelope) and "end" (finished, failed or replaced).
+        self.listener = listener
+
         self._lock = threading.Lock()
         self._generation = 0
         self._workers = set()
         self._temp_files = set()
         self._last_notice = None
+        self._atexit_registered = False
 
         if self.enabled:
+            self._register_atexit()
+
+    def _register_atexit(self):
+        if not self._atexit_registered:
+            self._atexit_registered = True
             atexit.register(self.shutdown)
 
+    def _emit(self, event, generation, **info):
+        listener = self.listener
+
+        if listener is None:
+            return
+
+        try:
+            listener(event, generation, **info)
+        except Exception:
+            pass
+
     # -- public API --------------------------------------------------------
+
+    def set_enabled(self, enabled):
+        """Turn speech on or off at runtime. Turning it off also stops any
+        speech that is in progress. Never raises."""
+        try:
+            enabled = enabled is True
+            self.enabled = enabled
+
+            if enabled:
+                self._register_atexit()
+            else:
+                with self._lock:
+                    self._generation += 1
+
+                self._stop_playback()
+        except Exception:
+            pass
 
     def speak(self, text):
         """Start speaking text in the background. Returns True if a request
@@ -268,11 +360,15 @@ class FishAudioSpeaker:
             with self._lock:
                 self._workers.add(worker)
 
+            self._emit("queued", generation)
+
             try:
                 worker.start()
             except Exception:
                 with self._lock:
                     self._workers.discard(worker)
+
+                self._emit("end", generation)
                 raise
 
             return True
@@ -324,6 +420,8 @@ class FishAudioSpeaker:
             if not self._is_current(generation):
                 return
 
+            envelope = wav_envelope(audio)
+            self._emit("start", generation, envelope=envelope)
             self._player.play(path)
 
             if self._is_current(generation):
@@ -341,6 +439,8 @@ class FishAudioSpeaker:
 
             with self._lock:
                 self._workers.discard(threading.current_thread())
+
+            self._emit("end", generation)
 
     def _is_current(self, generation):
         with self._lock:
