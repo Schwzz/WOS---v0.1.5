@@ -1,0 +1,397 @@
+"""Optional Fish Audio text-to-speech for WOS.
+
+Nothing in here may ever stop WOS or delay a text reply:
+
+* speak() never raises, and does its network and audio work on a background
+  thread, so the reply is already on screen and the prompt stays usable.
+* The API key is read from the FISH_AUDIO_API_KEY environment variable only.
+  It is sent in the request header and is never stored, printed or logged;
+  error messages only ever contain a short reason such as "HTTP 401".
+* Only one reply is spoken at a time. A new reply stops the previous one.
+
+Audio is requested as WAV so it can be played with the standard library's
+winsound module on Windows, with no extra dependency. httpx is imported only
+when a request is made, so a missing httpx cannot break startup.
+"""
+import atexit
+import os
+import tempfile
+import threading
+import time
+
+from core.config import DEFAULT_TTS_SETTINGS
+
+
+FISH_AUDIO_URL = "https://api.fish.audio/v1/tts"
+API_KEY_ENV = "FISH_AUDIO_API_KEY"
+REQUEST_TIMEOUT_SECONDS = 30
+
+# send_message() returns a few failures as ordinary reply text (for example
+# "I couldn't save this exchange: ..."). Those are errors, not speech.
+_NON_SPEECH_PREFIXES = ("WOS:", "I couldn't save")
+
+
+class TTSError(Exception):
+    """A failure whose message is safe to show (it never contains the key)."""
+
+
+def _clean_text(value, default):
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+
+    return default
+
+
+def load_tts_config(raw):
+    """Return a valid {"enabled", "voice_id", "model"} dict from the "tts"
+    value in settings.json. Anything missing or invalid falls back to the
+    defaults, and TTS is only enabled by a real JSON true."""
+    raw = raw if isinstance(raw, dict) else {}
+
+    return {
+        "enabled": raw.get("enabled") is True,
+        "voice_id": _clean_text(
+            raw.get("voice_id"), DEFAULT_TTS_SETTINGS["voice_id"]
+        ),
+        "model": _clean_text(raw.get("model"), DEFAULT_TTS_SETTINGS["model"]),
+    }
+
+
+def get_api_key():
+    """The key from the environment, or None if it is unset or a placeholder."""
+    key = os.getenv(API_KEY_ENV, "").strip()
+
+    if not key or key.lower().startswith("your_"):
+        return None
+
+    return key
+
+
+def clean_speech_text(text):
+    """The text to speak, or None for anything that must stay silent."""
+    if not isinstance(text, str):
+        return None
+
+    text = text.strip()
+
+    if not text or text.startswith(_NON_SPEECH_PREFIXES):
+        return None
+
+    return text
+
+
+def _describe_status(status):
+    if status in (401, 403):
+        return f"HTTP {status}: the API key was rejected"
+
+    if status == 402:
+        return "HTTP 402: the Fish Audio account has no credit or quota"
+
+    if status == 429:
+        return "HTTP 429: too many requests"
+
+    return f"HTTP {status}"
+
+
+_WAV_HEADER_SIZE = 44
+
+
+def normalize_wav(audio):
+    """Return audio with correct RIFF and data size fields, or raise TTSError.
+
+    Fish Audio sends WAV with streaming-style placeholder sizes, which makes
+    winsound play a Windows ding instead of the speech. Only the canonical
+    44-byte layout is accepted (RIFF/WAVE, a 16-byte "fmt " chunk, then
+    "data"); anything else is rejected rather than guessed at. Only the two
+    size fields are rewritten; every other byte is returned unchanged.
+    """
+    if not isinstance(audio, (bytes, bytearray)):
+        raise TTSError("the response was not WAV audio")
+
+    audio = bytes(audio)
+
+    if len(audio) <= _WAV_HEADER_SIZE:
+        raise TTSError("the WAV audio was empty or truncated")
+
+    if (
+        audio[0:4] != b"RIFF"
+        or audio[8:12] != b"WAVE"
+        or audio[12:16] != b"fmt "
+        or audio[36:40] != b"data"
+    ):
+        raise TTSError("the response was not WAV audio")
+
+    if int.from_bytes(audio[16:20], "little") != 16:
+        raise TTSError("the WAV layout is not supported")
+
+    channels = int.from_bytes(audio[22:24], "little")
+    sample_rate = int.from_bytes(audio[24:28], "little")
+
+    if channels < 1 or sample_rate < 1:
+        raise TTSError("the WAV audio format is invalid")
+
+    fixed = bytearray(audio)
+    fixed[4:8] = (len(audio) - 8).to_bytes(4, "little")
+    fixed[40:44] = (len(audio) - _WAV_HEADER_SIZE).to_bytes(4, "little")
+
+    return bytes(fixed)
+
+
+def synthesize(text, api_key, voice_id, model, post=None):
+    """Return WAV bytes for text, or raise TTSError."""
+    if post is None:
+        try:
+            import httpx
+        except ImportError:
+            raise TTSError(
+                "the 'httpx' package is not installed (pip install httpx)"
+            ) from None
+
+        post = httpx.post
+
+    try:
+        response = post(
+            FISH_AUDIO_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "model": model,
+            },
+            json={
+                "text": text,
+                "reference_id": voice_id,
+                "format": "wav",
+            },
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+    except Exception as error:
+        # Only the exception type is reported, never its text.
+        raise TTSError(f"network error ({type(error).__name__})") from None
+
+    status = getattr(response, "status_code", None)
+
+    if status != 200:
+        raise TTSError(_describe_status(status))
+
+    audio = getattr(response, "content", None)
+
+    if not isinstance(audio, (bytes, bytearray)) or not audio:
+        raise TTSError("the response contained no audio")
+
+    return normalize_wav(audio)
+
+
+class WinsoundPlayer:
+    """Plays a WAV file on Windows with the standard library."""
+
+    def __init__(self):
+        try:
+            import winsound
+        except ImportError:
+            winsound = None
+
+        self._winsound = winsound
+
+    def play(self, path):
+        """Play path and return when it has finished (or was stopped)."""
+        if self._winsound is None:
+            raise TTSError("audio playback is only supported on Windows")
+
+        self._winsound.PlaySound(path, self._winsound.SND_FILENAME)
+
+    def stop(self):
+        if self._winsound is not None:
+            # A None sound stops any waveform sound this process is playing.
+            self._winsound.PlaySound(None, self._winsound.SND_FILENAME)
+
+
+class FishAudioSpeaker:
+    """Speaks replies with Fish Audio. Every failure is contained here."""
+
+    def __init__(self, tts_settings=None, post=None, player=None,
+                 notify=print):
+        config = load_tts_config(tts_settings)
+
+        self.enabled = config["enabled"]
+        self.voice_id = config["voice_id"]
+        self.model = config["model"]
+
+        self._post = post
+        self._player = player if player is not None else WinsoundPlayer()
+        self._notify = notify
+
+        self._lock = threading.Lock()
+        self._generation = 0
+        self._workers = set()
+        self._temp_files = set()
+        self._last_notice = None
+
+        if self.enabled:
+            atexit.register(self.shutdown)
+
+    # -- public API --------------------------------------------------------
+
+    def speak(self, text):
+        """Start speaking text in the background. Returns True if a request
+        was started. Never raises."""
+        try:
+            if not self.enabled:
+                return False
+
+            text = clean_speech_text(text)
+
+            if text is None:
+                return False
+
+            api_key = get_api_key()
+
+            if api_key is None:
+                self._notice(
+                    f"{API_KEY_ENV} is not set, so replies are not spoken"
+                )
+                return False
+
+            with self._lock:
+                self._generation += 1
+                generation = self._generation
+
+            # Cut off whatever is still playing so replies never overlap.
+            self._stop_playback()
+
+            worker = threading.Thread(
+                target=self._run,
+                args=(generation, text, api_key),
+                name="wos-tts",
+                daemon=True,
+            )
+
+            with self._lock:
+                self._workers.add(worker)
+
+            try:
+                worker.start()
+            except Exception:
+                with self._lock:
+                    self._workers.discard(worker)
+                raise
+
+            return True
+
+        except Exception:
+            return False
+
+    def shutdown(self):
+        """Stop playback and remove leftover temporary files. Never raises."""
+        try:
+            with self._lock:
+                self._generation += 1
+                workers = list(self._workers)
+
+            self._stop_playback()
+
+            for worker in workers:
+                if worker is not threading.current_thread():
+                    worker.join(timeout=3)
+
+            for path in list(self._temp_files):
+                self._remove_temp(path)
+        except Exception:
+            pass
+
+    def wait(self, timeout=10):
+        """Wait for background work to finish (used by tests)."""
+        with self._lock:
+            workers = list(self._workers)
+
+        for worker in workers:
+            worker.join(timeout=timeout)
+
+    # -- background work ---------------------------------------------------
+
+    def _run(self, generation, text, api_key):
+        path = None
+
+        try:
+            audio = synthesize(
+                text, api_key, self.voice_id, self.model, post=self._post
+            )
+
+            if not self._is_current(generation):
+                return
+
+            path = self._write_temp(audio)
+
+            if not self._is_current(generation):
+                return
+
+            self._player.play(path)
+
+            if self._is_current(generation):
+                self._last_notice = None
+
+        except TTSError as error:
+            if self._is_current(generation):
+                self._notice(str(error))
+        except Exception as error:
+            if self._is_current(generation):
+                self._notice(f"unexpected error ({type(error).__name__})")
+        finally:
+            if path is not None:
+                self._remove_temp(path)
+
+            with self._lock:
+                self._workers.discard(threading.current_thread())
+
+    def _is_current(self, generation):
+        with self._lock:
+            return generation == self._generation
+
+    def _stop_playback(self):
+        try:
+            self._player.stop()
+        except Exception:
+            pass
+
+    def _write_temp(self, audio):
+        descriptor, path = tempfile.mkstemp(prefix="wos_tts_", suffix=".wav")
+
+        with self._lock:
+            self._temp_files.add(path)
+
+        with os.fdopen(descriptor, "wb") as file:
+            file.write(audio)
+
+        return path
+
+    def _remove_temp(self, path):
+        for attempt in range(3):
+            try:
+                os.remove(path)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                # Windows can hold the file for a moment after playback.
+                time.sleep(0.1)
+                continue
+
+            # Removed (or already gone). A file that could not be removed
+            # stays listed so shutdown() tries again.
+            with self._lock:
+                self._temp_files.discard(path)
+
+            return
+
+    def _notice(self, reason):
+        """Tell the user once per distinct problem, never raising."""
+        message = f"WOS: Voice unavailable: {reason}."
+
+        with self._lock:
+            if message == self._last_notice:
+                return
+
+            self._last_notice = message
+
+        try:
+            self._notify(message)
+        except Exception:
+            pass

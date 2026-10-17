@@ -1,0 +1,19 @@
+{
+    "user_name": "",
+    "tts": {
+        "enabled": false,
+        "voice_id": "5a62b02a53954e13ad0d9a90464ef9b0",
+        "model": "s2.1-pro-free"
+    },
+    "terminal": {
+        "default_name_color": "cyan"
+    },
+    "sessions": {
+        "max_chats": 5
+    },
+    "context": {
+        "max_context_messages": 20,
+        "max_historical_chats": 4,
+        "max_history_chars": 10000
+    }
+}
