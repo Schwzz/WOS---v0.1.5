@@ -1,81 +1,112 @@
-# WOS-Overlay
+# WOS Companion
 
-WOS plus a desktop window for Nexis: an animated core that shows what WOS is
-doing, a chat panel, and a **Voice Output** switch. The window is a second
-view onto the *same* running WOS process, so the provider, character, memory,
-chats and TTS are shared with the terminal. Nothing is duplicated.
+The Companion and chat views use the same session, character, models, memories,
+chat files, and voice player as the terminal.
 
 ## Run
 
-    pip install -r requirements.txt
-    run.bat
+```text
+pip install -r requirements.txt
+run.bat
+```
 
-`run.bat` opens the overlay window (it waits for WOS) and starts the normal
-WOS terminal with `python start.py --overlay`. Plain `python start.py` still
-works exactly as before and starts no overlay. `run.bat --browser` opens the
-overlay in your browser instead. Without `pywebview` the browser is used
-automatically.
+`run.bat --browser` opens the browser version. Without pywebview, WOS falls back
+to your browser automatically. `python start.py` still runs the terminal alone.
 
-## How it fits together
+## Companion and chat
 
-- `core/overlay.py` - `OverlayBackend` (one lock shared by the terminal loop
-  and the UI, so they never change the session at the same time) and a small
-  local HTTP server on `127.0.0.1` (port from `settings.json` ->
-  `overlay.port`, default 47615; `0` = any free port). Every API call needs a
-  random token that `overlay/main.py` reads from `data/overlay_endpoint.json`.
-- `core/tts.py` - the single Fish Audio speaker. It now also reports
-  `queued / start / end` and the loudness of the WAV it is about to play;
-  that is what drives the avatar.
-- `overlay/main.py` - the pywebview window. `overlay/web/` - the Sage Companion
-  renderer (`sage.js`, `style.css`) plus `chat.js` for chat, voice and the
-  backend link.
-- The terminal keeps all its commands. The overlay is chat only: text starting
-  with `/` is refused there ("run it in the terminal").
+- Drag the dedicated header to move the desktop window. Message text remains selectable.
+- Resize with the bottom-right grip or the native window edges. Each view remembers
+  its own dimensions and position, and restored windows stay on an attached screen.
+- **Chat / companion** switches views. Chat supports multiline input, copy buttons,
+  earlier-message loading, and preserving your reading position when new replies arrive.
+- Enter sends; Shift+Enter adds a line. Drafts survive a temporary disconnect and
+  are kept separately for each chat while the window stays open.
+- The pin toggles always-on-top on desktop. Minimize leaves WOS running.
+- Appearance offers Orb, Orbit rings, and Waveform, with separate light/dark theme,
+  accent, avatar size, glow, and motion controls. Settings save automatically.
+  System reduced-motion settings disable decorative motion.
 
-## Voice Output
+## Voice and stopping
 
-`settings.json` -> `tts.enabled`, default `false`. The overlay switch and the
-terminal use that one setting, so toggling in the window changes it for both
-and it is remembered next start. `FISH_AUDIO_API_KEY` must be set (environment
-variable or `.env`); the key is never sent to the UI. If voice is on but the
-key is missing the button says `voice: on (no key)`.
+Set `FISH_AUDIO_API_KEY` in `.env` or your environment; never put keys in a chat.
+The **voice** switch controls future replies and is remembered in `settings.json`.
+Turning it off also stops the current/pending speech. It does not require a
+restart. Missing keys and voice failures have explicit status messages.
 
-## Manual Windows test
+**Stop**, Escape in the chat input, or terminal `/stop` cancels current and
+pending speech without muting future replies. At the terminal's main prompt,
+Ctrl+C stops active speech; with no speech active, Ctrl+C exits as before.
+Closing the desktop window (including Alt+F4), exiting the terminal, or restarting
+also stops speech. A reply that was still being generated when stopped will stay
+text-only. A new message interrupts the previous spoken reply.
 
-1. `pip install -r requirements.txt`, then double-click `run.bat`.
-   Expect a terminal (normal WOS header) and a small always-on-top window
-   (bottom-right) that says `waiting for WOS`, then `standing by`.
-2. Click `chat`. The window grows upward and a chat panel appears.
-   Type `hello` and press Enter. Expect:
-   - the core switches to `thinking` (faster spin) while the model works;
-   - the reply appears in the panel and in the terminal as
-     `You (overlay): hello` / `Nexis: ...`;
-   - back to `idle`. Click `avatar` to collapse; the last reply shows as one
-     line under the readout.
-3. In the terminal type `hello again`, then check the panel updates and the
-   core also showed `thinking`. Run `/memory`, `/chats`: same session.
-4. Voice off (default, `voice: off`): replies are text only, no sound, no
-   request to Fish Audio.
-5. Set `FISH_AUDIO_API_KEY`, restart, click `voice: off` -> `voice: on`.
-   Send a message. Expect `thinking` until the audio starts, then `speaking`
-   with the core pulsing in time with your own voice's loud and quiet parts
-   (try a long and a very short reply), then `idle` the moment it stops.
-   A reply typed in the terminal is spoken and animated the same way.
-6. Close WOS, reopen: the voice switch keeps its last position
-   (`settings.json` -> `tts.enabled`). Switching it off mid-speech stops it.
-7. Type `/restart` in the terminal. The overlay shows `backend offline` for a
-   few seconds, then reconnects by itself.
-8. Type `/exit`. The overlay window closes about 20 seconds later.
+The status distinguishes **analysing**, **preparing voice**, and **speaking**.
+Speech is synthesized as a complete WAV before playback begins; this change does
+not introduce streaming TTS or delay text until audio is ready.
 
-## Known limitations
+## Models
 
-- Not run on a real Windows desktop by the automated tests: window resize,
-  dragging, `winsound` playback and the pywebview shell are untested there.
-  The backend, HTTP API, speech events, loudness data and `chat.js` logic are
-  covered by tests (`tests/test_overlay.py`, `tests/js/chat_harness.js`).
-- Avatar timing follows the moment playback starts, plus network latency
-  (about 150 ms polling); expect it to be slightly loose, not frame-exact.
-- `easy_drag` (drag the window anywhere) may make selecting text in the chat
-  log awkward; the input box is unaffected.
-- A UI message waits up to 3 seconds if the terminal is in the middle of a
-  command (for example a model picker), then reports "busy".
+After configuring a new Gemini key, the terminal offers a numbered model picker
+for the current chat. `/model` and `/provider` also discover models from Gemini,
+filtering for `generateContent` support. The chat view has a model dropdown and
+Refresh control. Manual names remain an optional fallback.
+
+Discovery fetches all pages, sends the key in a request header, and caches results
+for ten minutes. If discovery fails, WOS identifies the cached/saved list and shows
+a clear warning. Cache records contain a key fingerprint, never the key itself.
+A listed model does not guarantee quota, billing eligibility, or generation access.
+Ollama continues to list the models installed on your computer.
+
+Model changes affect the current chat. `/defaults model` sets the model for new
+chats. Cancelling a picker preserves the current selection.
+
+## Reliability and storage
+
+- Terminal chat/character/model changes refresh the Companion immediately.
+- Polls have timeouts; disconnected controls are disabled and the draft is preserved.
+- Controlled `/restart` retains the port and token so browser clients reconnect.
+  Desktop clients can also read a changed endpoint after a fresh launch.
+- Message identifiers prevent duplicate delivery when retrying a lost response in
+  the same backend process. These identifiers are not persisted across a full restart.
+- Appearance: `data/companion.json`; window geometry: `data/companion_window.json`;
+  model discovery: `data/model_catalog.json`; initial key setup: `data/cloud_model_setup.json`.
+  Chats and credentials are never sent to the UI as configuration files.
+
+The local server is bound to 127.0.0.1. API routes require the private token and
+reject foreign hosts/origins. Browser clients cannot discover a fresh token from
+the filesystem; after completely closing and relaunching the terminal, reopen
+`run.bat --browser` to obtain the new URL.
+
+## Validation
+
+```text
+python -m pip install requests python-dotenv
+python -m unittest discover -s tests -t .
+node --check overlay/web/chat.js
+node --check overlay/web/sage.js
+```
+
+Tests use fake provider responses/audio and temporary data, without real API keys
+or paid requests. GitHub Actions runs the Python and JS checks on Linux and Windows.
+Optional rendered UI checks:
+
+```text
+npm install --no-save playwright@1.62.1
+npx playwright install chromium
+node tests/browser_smoke.cjs
+```
+
+The browser smoke checks use synthetic messages and model metadata. They cover
+model selection, safe retries, literal rendering, scroll/draft preservation,
+reconnection, appearance, and small-window layouts. They do not exercise native
+Windows dragging, sound hardware, or pywebview's GUI loop. Those require a real
+Windows desktop smoke test. Audio animation follows the WAV envelope and estimated
+playback duration with 150 ms state polling; it is not sample-accurate.
+
+## Preview
+
+Browser previews with synthetic messages and model names:
+
+![Companion in dark mode](docs/companion.png)
+![Chat in light mode](docs/chat.png)
