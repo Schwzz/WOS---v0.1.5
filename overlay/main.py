@@ -76,7 +76,9 @@ def save_geometry(*_):
             finally:
                 if os.path.exists(name):
                     os.unlink(name)
-        except (OSError, TypeError, ValueError):
+        except Exception:
+            # Native geometry access may fail while minimizing/closing. Saving
+            # a preference must not break a window control or the close hook.
             pass
 
 
@@ -175,10 +177,17 @@ class Api:
         return {"expanded": _expanded, "on_top": _geometry["on_top"]}
 
     def set_on_top(self, enabled):
-        if _window and isinstance(enabled, bool):
+        # A native window failure must remain a window-control error. Do not
+        # query geometry here: that crosses the GUI thread again unnecessarily.
+        if not _window or not isinstance(enabled, bool):
+            return dict(self.get_window_state(), error="The window is unavailable.")
+        try:
             _window.on_top = enabled
+        except Exception:
+            return dict(self.get_window_state(), error="Always on top could not be changed.")
+        with _geometry_lock:
             _geometry["on_top"] = enabled
-            save_geometry()
+        schedule_geometry_save()
         return self.get_window_state()
 
     def resize(self, width, height):

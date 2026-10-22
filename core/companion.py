@@ -8,7 +8,7 @@ from pathlib import Path
 from core import config
 from core.conversation import _atomic_write_json
 
-DEFAULTS = {"preset": "orb", "accent": "#a78bfa", "size": 1.0,
+DEFAULTS = {"preset": "crystal", "accent": "#a78bfa", "size": 1.0,
             "glow": 0.7, "motion": 1.0, "theme": "dark"}
 
 
@@ -19,8 +19,8 @@ def validate_preferences(raw):
     for key, value in raw.items():
         if key not in DEFAULTS:
             raise ValueError("Unknown appearance setting.")
-        if key == "preset" and value not in ("orb", "rings", "wave"):
-            raise ValueError("Choose Orb, Rings, or Wave.")
+        if key == "preset" and value not in ("crystal", "orb", "rings", "wave"):
+            raise ValueError("Choose Crystal, Orb, Rings, or Wave.")
         if key == "theme" and value not in ("dark", "light"):
             raise ValueError("Choose light or dark mode.")
         if key == "accent" and (not isinstance(value, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", value)):

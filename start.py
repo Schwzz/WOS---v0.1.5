@@ -85,7 +85,8 @@ from core.help_text import (
     suggest_topic,
 )
 from core.tts import FishAudioSpeaker
-from core.model_catalog import ModelCatalog, gemini_key
+from core.model_catalog import ModelCatalog
+from core.provider_registry import PROVIDERS, api_key
 from core.overlay import OverlayBackend, OverlayServer, overlay_port
 
 
@@ -1117,7 +1118,7 @@ def choose_provider():
     """Numbered menu of providers. Returns the provider or None."""
     show_current_settings()
 
-    providers = sorted(SUPPORTED_PROVIDERS)
+    providers = ["cloud", "ollama"] + sorted(SUPPORTED_PROVIDERS - {"cloud", "ollama"})
     labels = [
         f"{name} (current)" if name == session.provider else name
         for name in providers
@@ -1145,7 +1146,7 @@ def choose_model(provider):
     sizes = {}
     cloud_listing = None
 
-    if provider == "cloud":
+    if provider != "ollama":
         cloud_listing = ModelCatalog().list(provider, session.known_models(provider), refresh=True)
         if cloud_listing["warning"]:
             print(f"WOS: {cloud_listing['warning']}")
@@ -1188,10 +1189,9 @@ def choose_model(provider):
     allow_other = not (provider == "ollama" and installed is not None)
 
     if not models:
-        print(
-            "WOS: Type the name of the model to use. It cannot be checked "
-            "until Ollama is running."
-        )
+        print("WOS: Type the name of the model to use. It cannot be checked until Ollama is running."
+              if provider == "ollama" else
+              "WOS: No models were discovered. Type an exact model name, or cancel.")
         return ask_model_name(provider, installed)
 
     if allow_other:
@@ -1202,8 +1202,8 @@ def choose_model(provider):
     if provider == "ollama" and installed is not None:
         print("These are installed on this computer.")
     elif cloud_listing and cloud_listing["source"] in ("live", "cached"):
-        print("These models support chat generation according to Gemini."
-              if cloud_listing["source"] == "live" else "Using the cached Gemini model list.")
+        print(f"Models listed by {PROVIDERS[provider]['label']}."
+              if cloud_listing["source"] == "live" else "Using the cached provider model list.")
         print("Listing a model does not guarantee account quota or access.")
     else:
         print("These are model names WOS already knows "
@@ -1493,20 +1493,21 @@ def free_up_chat_slot():
 show_header()
 
 def choose_new_cloud_key_model():
-    if session.provider == "cloud" and gemini_key():
+    if session.provider != "ollama" and api_key(session.provider):
         import hashlib
         import json
         from core.config import PROJECT_ROOT
         from core.conversation import _atomic_write_json
-        setup_path = PROJECT_ROOT / "data" / "cloud_model_setup.json"
-        fingerprint = hashlib.sha256(gemini_key().encode()).hexdigest()
+        setup_name = "cloud_model_setup.json" if session.provider == "cloud" else f"{session.provider}_model_setup.json"
+        setup_path = PROJECT_ROOT / "data" / setup_name
+        fingerprint = hashlib.sha256(api_key(session.provider).encode()).hexdigest()
         try:
             selected_key = json.loads(setup_path.read_text("utf-8")).get("key_hash")
         except (OSError, ValueError, AttributeError):
             selected_key = None
         if selected_key != fingerprint:
-            print("WOS: A new Gemini key is configured. Choose a model for this chat.")
-            choice = choose_model("cloud")
+            print(f"WOS: A new {PROVIDERS[session.provider]['label']} key is configured. Choose a model for this chat.")
+            choice = choose_model(session.provider)
             if choice is not None:
                 apply_model_change(choice, check=False)
                 if session.model == choice:

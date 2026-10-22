@@ -34,6 +34,7 @@ from core import config
 from core.tts import DEFAULT_TTS_SETTINGS, get_api_key
 from core.companion import Preferences
 from core.model_catalog import ModelCatalog
+from core.provider_registry import PROVIDERS, provider_options
 
 
 APP_NAME = "WOS-Overlay"
@@ -203,7 +204,7 @@ class OverlayBackend:
                     if not isinstance(reply, str) or not reply.strip():
                         self._say("WOS: The model did not return a response.")
                         raise BackendError(
-                            "The model did not return a response.", 502
+                            getattr(session, "last_provider_error", None) or "The model did not return a response.", 502
                         )
 
                     name = getattr(session, "character_name", "Nexis")
@@ -377,14 +378,42 @@ class OverlayBackend:
 
     # -- voice output ------------------------------------------------------
 
-    def get_models(self, refresh=False):
+    def get_models(self, refresh=False, provider=None):
         session = self._get_session()
-        provider = getattr(session, "provider", "cloud")
+        current_provider = getattr(session, "provider", "cloud")
+        provider = provider or current_provider
+        if provider not in PROVIDERS:
+            raise BackendError("Unknown provider.")
         known = session.known_models(provider) if hasattr(session, "known_models") else []
         result = self.catalog.list(provider, known, refresh=refresh)
-        return dict(result, provider=provider, current=getattr(session, "model", ""))
+        return dict(result, provider=provider, current=getattr(session, "model", "") if provider == current_provider else None)
 
-    def set_model(self, model, provider=None):
+    def set_provider(self, provider, model, expected_provider=None, session_id=None):
+        if not isinstance(provider, str) or provider not in PROVIDERS:
+            raise BackendError("Unknown provider.")
+        try:
+            model = config.validate_model_name(model)
+        except ValueError as error:
+            raise BackendError(str(error)) from None
+        if not self._command_lock.acquire(timeout=BUSY_TIMEOUT_SECONDS):
+            raise BackendBusy("WOS is busy. Change providers when the reply is finished.")
+        try:
+            session = self._get_session()
+            if (expected_provider is not None and expected_provider != session.provider) or (
+                session_id is not None and session_id != getattr(session, 'session_id', None)
+            ):
+                raise BackendError("The chat or provider changed. Refresh before applying your selection.", 409)
+            self.stop_speech()
+            result = session.change_provider(provider, model)
+            if session.provider != provider or session.model != model:
+                raise BackendError(result)
+            with self._lock:
+                self._chat_version += 1
+            return self.get_state()
+        finally:
+            self._command_lock.release()
+
+    def set_model(self, model, provider=None, session_id=None):
         try:
             model = config.validate_model_name(model)
         except ValueError as error:
@@ -395,6 +424,8 @@ class OverlayBackend:
             session = self._get_session()
             if provider is not None and provider != session.provider:
                 raise BackendError("The provider changed. Refresh the model list.", 409)
+            if session_id is not None and session_id != getattr(session, 'session_id', None):
+                raise BackendError("The active chat changed. Refresh before changing its model.", 409)
             self.stop_speech()
             result = session.change_model(model)
             if session.model != model:
@@ -675,7 +706,13 @@ def _make_handler(server):
                 self._json(200, server.backend.get_history(before))
             elif path == "/api/models":
                 refresh = parse_qs(parts.query).get("refresh", ["0"])[0] == "1"
-                self._json(200, server.backend.get_models(refresh))
+                provider = parse_qs(parts.query).get("provider", [None])[0]
+                try:
+                    self._json(200, server.backend.get_models(refresh, provider))
+                except BackendError as error:
+                    self._error(error.status, str(error))
+            elif path == "/api/providers":
+                self._json(200, {"providers": provider_options()})
             elif path == "/api/preferences":
                 self._json(200, server.backend.preferences.get())
             else:
@@ -691,7 +728,7 @@ def _make_handler(server):
             if not self._guard(api=True):
                 return
 
-            if path not in ("/api/message", "/api/voice", "/api/stop", "/api/model", "/api/preferences"):
+            if path not in ("/api/message", "/api/voice", "/api/stop", "/api/model", "/api/provider", "/api/preferences"):
                 self._error(404, "Not found.")
                 return
 
@@ -714,7 +751,10 @@ def _make_handler(server):
                     server.backend.stop_speech()
                     self._json(200, server.backend.get_state())
                 elif path == "/api/model":
-                    self._json(200, server.backend.set_model(data.get("model"), data.get("provider")))
+                    self._json(200, server.backend.set_model(data.get("model"), data.get("provider"), data.get("session_id")))
+                elif path == "/api/provider":
+                    self._json(200, server.backend.set_provider(data.get("provider"), data.get("model"),
+                        data.get("expected_provider"), data.get("session_id")))
                 else:
                     try:
                         result = server.backend.preferences.update(data)

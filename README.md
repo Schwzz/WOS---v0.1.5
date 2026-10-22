@@ -11,12 +11,12 @@ A terminal-based AI companion. Chats and memories are saved locally in a `data/`
 pip install requests python-dotenv google-genai
 ```
 
-All three are needed whichever provider you use, because both provider modules are loaded at startup.
+All three are needed whichever provider you use, because the provider modules are loaded at startup.
 
 ## First-time setup
 
 1. Install the packages above.
-2. Choose a provider in `config.json` (`"cloud"` for Gemini or `"ollama"`). The default character is `nexis`.
+2. Choose a provider in `config.json`, or use `/provider` after starting. `cloud` remains the Gemini ID. OpenAI, Claude, OpenRouter, DeepSeek, Grok, and Ollama are also supported. The default character is `nexis`.
 3. Set up the provider you chose (see below).
 4. Start WOS from this folder:
 
@@ -26,7 +26,14 @@ python start.py
 
 Type `/help` to see all commands.
 
-### Cloud provider (Gemini)
+### Cloud providers
+
+Configure the keys you use in `.env`, then restart WOS and use `/provider` or the
+Companion chat provider dropdown to select a provider and a discovered model.
+See the [provider/key table](OVERLAY.md#models) for setup and limitations. No model
+is chosen automatically for a newly added provider.
+
+### Gemini setup
 
 WOS reads your API key from a file named `.env` in this folder. The key is not included, and `.env.txt` is only a template.
 
@@ -98,7 +105,7 @@ Type `/provider` on its own to pick a provider from a numbered list, then pick o
 
 - **Ollama:** the list shows the models actually installed on your computer, asked from Ollama while it is running, with each model's size when Ollama reports it (for example `llama3:latest - 4.7 GB`). Pick one by number. WOS only accepts an installed model, and tells you how to install one (`ollama pull <model>`) if you type something else.
 - **If Ollama is not running:** WOS says so and shows an "Ollama Unavailable" menu: start Ollama and choose **Try again**, choose to **type a model name yourself** (WOS cannot check it while Ollama is unavailable), or press Enter or `0` to cancel. Cancelling leaves your provider and model unchanged.
-- **Cloud (Gemini):** WOS fetches models with chat generation support using your configured API key. A newly configured key opens a picker for the current chat. `/model`, `/provider`, and the Companion chat dropdown also offer discovered models. If discovery fails, WOS identifies a cached/saved fallback and explains the error. **Other** still accepts an exact model name. Listing a model does not guarantee account access or quota.
+- **Cloud providers:** WOS discovers model IDs using each provider’s configured API key. Gemini filters for chat generation support; other model lists may include text models incompatible with the chat endpoint. A newly configured key opens a picker for the current chat. `/model`, `/provider`, and the Companion chat dropdown also offer discovered models. If discovery fails, WOS identifies a cached/saved fallback and explains the error. **Other** still accepts an exact model name. Listing a model does not guarantee account access or quota.
 
 **What a change affects.** `/provider` and `/model` change the **current chat only**, and WOS tells you so after each change. New chats start with your defaults, which you change separately with `/defaults provider`, `/defaults model` and `/defaults character`.
 
@@ -118,4 +125,4 @@ python -m unittest discover -s tests -t .
 
 ## WOS Companion
 
-The resizable Companion adds customizable avatars, light/dark themes, chat and model controls, and a Stop speaking action. See [OVERLAY.md](OVERLAY.md) for setup, controls, screenshots, and validation details.
+The resizable Companion adds a hollow Crystal core avatar that reacts to playing speech, other customizable styles, light/dark themes, chat and model controls, and a Stop speaking action. See [OVERLAY.md](OVERLAY.md) for setup, controls, screenshots, and validation details.

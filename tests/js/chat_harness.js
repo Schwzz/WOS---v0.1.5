@@ -34,6 +34,7 @@ function makeEl(id) {
     append(...c) {
       this.children.push(...c);
     },
+    getAttribute(k) { return this.attrs[k]; },
     setAttribute(k, v) {
       this.attrs[k] = v;
     },
@@ -67,6 +68,9 @@ const ids = [
   'btn-chat',
   'chat',
   'line-c',
+  'btn-pin',
+  'btn-minimize',
+  'notice',
 ];
 const els = Object.fromEntries(ids.map((i) => [i, makeEl(i)]));
 const body = makeEl('body');
@@ -140,7 +144,7 @@ function fetchStub(url, opts = {}) {
   return respond(404, { error: 'nope' });
 }
 
-const window = { Sage, addEventListener() {} };
+const window = { Sage, listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } };
 const sandbox = {
   window,
   location: { hash: '#tok' },
@@ -151,7 +155,7 @@ const sandbox = {
   },
   setTimeout: (fn, ms) => {
     const id = ++timerId;
-    timers.set(id, fn);
+    timers.set(id, { fn, ms });
     return id;
   },
   clearTimeout: (id) => timers.delete(id),
@@ -177,7 +181,7 @@ const flush = async () => {
 async function pollOnce() {
   const t = [...timers.values()];
   timers.clear();
-  t.forEach((fn) => fn());
+  t.forEach(({ fn }) => fn());
   await flush();
 }
 function frame() {
@@ -315,6 +319,49 @@ function frame() {
   assert(!body.classes.has('offline'));
   assert.strictEqual(calls.status[calls.status.length - 1], 'standing by');
 
+  // Native failures stay separate from HTTP health, and a hanging bridge
+  // cannot prevent the next state poll or leave the pin permanently disabled.
+  const pin = els['btn-pin'];
+  window.pywebview = { api: {
+    get_window_state: async () => ({ expanded: false, on_top: true }),
+    set_on_top: async () => { throw new Error('native failure'); },
+    get_endpoint: () => new Promise(() => {}),
+  } };
+  await window.listeners.pywebviewready();
+  await flush();
+  assert.strictEqual(pin.getAttribute('aria-pressed'), 'true');
+  await pin.listeners.click();
+  assert.strictEqual(pin.disabled, false);
+  assert.strictEqual(pin.getAttribute('aria-pressed'), 'true');
+  assert(!body.classes.has('offline'));
+  assert(!els['chat-send'].disabled);
+  window.pywebview.api.set_on_top = async (on_top) => ({ on_top });
+  await pin.listeners.click();
+  assert.strictEqual(pin.getAttribute('aria-pressed'), 'false');
+  assert(pin.title.startsWith('Pin:'));
+  window.pywebview.api.set_on_top = () => new Promise(() => {});
+  const pendingPin = pin.listeners.click();
+  await flush();
+  assert(pin.disabled);
+  [...timers.values()].filter((t) => t.ms === 2000).forEach((t) => t.fn());
+  await pendingPin;
+  assert(!pin.disabled);
+  backend.online = false;
+  await pollOnce();
+  assert(body.classes.has('offline'));
+  backend.online = true;
+  await pollOnce();
+  assert(!body.classes.has('offline'), 'HTTP recovers while get_endpoint never resolves');
+  // A rendering exception must not be reported as a network disconnect or
+  // prevent the next refresh.
+  const original = Sage.setState;
+  Sage.setState = () => { throw new Error('render failure'); };
+  await pollOnce();
+  assert(!body.classes.has('offline'));
+  Sage.setState = original;
+  backend.state.state = 'thinking';
+  await pollOnce();
+  assert.strictEqual(Sage.state, 'thinking');
   console.log('chat.js harness: all checks passed');
 })().catch((e) => {
   console.error(e);

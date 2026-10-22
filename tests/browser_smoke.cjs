@@ -18,7 +18,7 @@ const state = {
   chat_version: 0,
   audio: null,
 };
-let prefs = { preset: 'orb', accent: '#a78bfa', size: 1, glow: 0.7, motion: 1, theme: 'dark' };
+let prefs = { preset: 'crystal', accent: '#a78bfa', size: 1, glow: 0.7, motion: 1, theme: 'dark' };
 let messages = Array.from({ length: 80 }, (_, i) => ({
   role: i % 2 ? 'assistant' : 'user',
   content: 'A saved message ' + i + '\nA little more detail for reading and scrolling.',
@@ -58,17 +58,28 @@ const server = http.createServer(async (req, res) => {
         session_id: state.session_id,
       });
     }
-    if (url.pathname === '/api/models')
-      return json(200, {
-        provider: 'cloud',
-        current: state.model,
-        source: 'live',
-        warning: null,
-        models: [
-          { id: 'chat-alpha', label: 'Chat Alpha' },
-          { id: 'chat-beta', label: 'Chat Beta' },
-        ],
+    if (url.pathname === '/api/providers') return json(200, { providers: [
+      { id: 'cloud', label: 'Gemini', configured: true },
+      { id: 'openrouter', label: 'OpenRouter', configured: true },
+      { id: 'openai', label: 'OpenAI', configured: false },
+    ] });
+    if (url.pathname === '/api/models') {
+      const provider = url.searchParams.get('provider') || state.provider;
+      return json(200, { provider, current: provider === state.provider ? state.model : null,
+        source: 'live', warning: null,
+        models: provider === 'cloud' ? [
+          { id: 'chat-alpha', label: 'Chat Alpha' }, { id: 'chat-beta', label: 'Chat Beta' },
+        ] : [{ id: 'vendor/chat-gamma', label: 'Chat Gamma' }],
       });
+    }
+    if (url.pathname === '/api/provider') {
+      if (data.expected_provider !== state.provider || data.session_id !== state.session_id)
+        return json(409, { error: 'The chat or provider changed.' });
+      state.provider = data.provider;
+      state.model = data.model;
+      state.chat_version++;
+      return json(200, state);
+    }
     if (url.pathname === '/api/model') {
       state.model = data.model;
       state.chat_version++;
@@ -161,6 +172,20 @@ const server = http.createServer(async (req, res) => {
     await page.locator('#model-select').selectOption('chat-beta');
     await page.waitForFunction(() => document.querySelector('#model-select').value === 'chat-beta');
     assert.equal(state.model, 'chat-beta');
+    await page.locator('#provider-select').selectOption('openrouter');
+    await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2 &&
+      document.querySelector('#model-select').value === '');
+    assert.equal(state.provider, 'cloud', 'previewing a provider does not change the chat');
+    assert.equal(await page.locator('#chat-send').isDisabled(), true, 'choose a model before sending to a new provider');
+    await page.locator('#model-select').selectOption('vendor/chat-gamma');
+    await page.waitForFunction(() => document.querySelector('#provider-label').textContent === 'OPENROUTER' &&
+      document.querySelector('#model-select').value === 'vendor/chat-gamma');
+    assert.equal(state.provider, 'openrouter');
+    await page.locator('#provider-select').selectOption('cloud');
+    await page.waitForFunction(() => document.querySelector('#model-select').options.length === 3);
+    await page.locator('#model-select').selectOption('chat-beta');
+    await page.waitForFunction(() => document.querySelector('#provider-label').textContent === 'GEMINI' &&
+      document.querySelector('#model-select').value === 'chat-beta');
     // Reading older text must survive background updates without jumping.
     await page.locator('#chat-log').evaluate((el) => {
       el.scrollTop = 100;
@@ -255,6 +280,39 @@ const server = http.createServer(async (req, res) => {
         `composer fits ${width}x${height}`,
       );
     }
+    // A broken or hung native bridge must not freeze a healthy HTTP session.
+    await page.evaluate(() => {
+      window.nativePinMode = 'ok';
+      let onTop = true;
+      window.pywebview = { api: {
+        get_window_state: async () => ({ on_top: onTop, expanded: true }),
+        get_endpoint: () => new Promise(() => {}),
+        set_on_top: async (enabled) => {
+          if (window.nativePinMode === 'throw') throw new Error('Native pin failed');
+          if (window.nativePinMode === 'hang') return new Promise(() => {});
+          onTop = enabled;
+          return { on_top: onTop, expanded: true };
+        },
+      } };
+      window.dispatchEvent(new Event('pywebviewready'));
+    });
+    const pin = page.locator('#btn-pin');
+    await page.waitForFunction(() => !document.querySelector('#btn-pin').hidden);
+    await pin.click();
+    await page.waitForFunction(() => document.querySelector('#btn-pin').getAttribute('aria-pressed') === 'false');
+    await page.evaluate(() => { window.nativePinMode = 'throw'; });
+    await pin.click();
+    await page.waitForFunction(() => !document.querySelector('#btn-pin').disabled);
+    assert.equal(await pin.getAttribute('aria-pressed'), 'false');
+    assert.equal(await page.locator('#chat-send').isDisabled(), false);
+    await page.evaluate(() => { window.nativePinMode = 'hang'; });
+    await pin.click();
+    await page.waitForFunction(() => !document.querySelector('#btn-pin').disabled);
+    assert.equal(await page.locator('#chat-send').isDisabled(), false);
+    online = false;
+    await page.waitForFunction(() => document.querySelector('#chat-send').disabled);
+    online = true;
+    await page.waitForFunction(() => !document.querySelector('#chat-send').disabled);
     assert.deepEqual(errors, []);
     console.log('Companion browser smoke: all checks passed');
   } finally {

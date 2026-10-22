@@ -257,7 +257,7 @@ HELP_TOPICS = {
             "computer, with their sizes when Ollama reports them, and WOS "
             "only accepts one of those. If Ollama is not running, WOS "
             "explains how to start it and lets you try again, type a name "
-            "yourself, or cancel. For Gemini, WOS fetches models with chat support using your configured key. If discovery fails, it uses a cached list or model names "
+            "yourself, or cancel. For cloud providers, WOS fetches model IDs using the corresponding configured key. If discovery fails, it uses a cached list or model names "
             "WOS already knows (your chats, your defaults, and "
             "\"suggested_models\" in config.json) plus an Other choice to "
             "type any name. Listing a model does not guarantee account access or quota. Manual names are checked only to ensure that "
@@ -295,7 +295,7 @@ HELP_TOPICS = {
             "the model list. Nothing changes until you have chosen both.",
             "For Ollama, the list shows the models installed on this "
             "computer, with their sizes when available. If Ollama is not "
-            "running, you can try again or cancel. Gemini fetches its model list, with a cached or saved fallback. It also "
+            "running, you can try again or cancel. Cloud providers fetch model lists, with a cached or saved fallback. It also "
             "shows model names WOS already knows, plus an Other choice to "
             "type any name.",
             _MENU_NOTE,

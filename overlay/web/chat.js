@@ -21,7 +21,7 @@
     listening: 'listening',
   };
   const defaults = {
-    preset: 'orb',
+    preset: 'crystal',
     accent: '#a78bfa',
     size: 1,
     glow: 0.7,
@@ -49,15 +49,15 @@
     historyTotal = 0,
     rows = new Map(),
     uncertain = null;
-  let modelProvider = null,
-    modelSerial = 0,
+  let modelSerial = 0,
     prefs = { ...defaults },
     prefSave = null,
     lastVoiceError = null;
   let preferenceVersion = 0,
     savingPreferences = false,
     saveAgain = false,
-    modelLoading = false;
+    modelLoading = false,
+    switchingModel = false;
   let chatScrollTop = 0,
     followChat = true,
     openedChat = false;
@@ -74,16 +74,52 @@
     }
   }
   function controls() {
-    sendBtn.disabled = !linked || sending;
+    sendBtn.disabled = !linked || sending || switchingModel || chosenProvider() !== provider;
     voiceBtn.disabled = !linked;
     if ($('btn-stop')) $('btn-stop').disabled = !linked;
-    if ($('model-select')) $('model-select').disabled = !linked || sending;
-    if ($('btn-model-refresh')) $('btn-model-refresh').disabled = !linked || modelLoading;
+    if ($('model-select')) $('model-select').disabled = !linked || sending || modelLoading || switchingModel;
+    if ($('provider-select')) $('provider-select').disabled = !linked || sending || switchingModel;
+    if ($('manual-model')) $('manual-model').disabled = !linked || sending || switchingModel;
+    if ($('btn-model-refresh')) $('btn-model-refresh').disabled = !linked || modelLoading || switchingModel;
   }
-  async function refreshEndpoint() {
+  // Native bridge calls can fail or never settle. They must not stop the
+  // HTTP polling loop or label a healthy backend as disconnected.
+  async function shellCall(method, args = [], timeout = 2000) {
+    const shell = pyApi();
+    if (!shell || typeof shell[method] !== 'function')
+      throw new Error('Window controls are unavailable.');
+    let timer;
+    try {
+      return await Promise.race([
+        Promise.resolve().then(() => shell[method](...args)),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('The window control did not respond.')), timeout);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  async function windowAction(method, args = []) {
+    try {
+      const state = await shellCall(method, args);
+      if (state && state.error) throw new Error(state.error);
+      return state;
+    } catch (_) {
+      notice('Could not change the window. Try again; connection checks will continue.');
+      return null;
+    }
+  }
+  let endpointRefresh = null;
+  function refreshEndpoint() {
+    if (!endpointRefresh)
+      endpointRefresh = readFreshEndpoint().finally(() => { endpointRefresh = null; });
+    return endpointRefresh;
+  }
+  async function readFreshEndpoint() {
     try {
       const shell = pyApi(),
-        ep = shell && shell.get_endpoint ? await shell.get_endpoint() : null;
+        ep = shell && shell.get_endpoint ? await shellCall('get_endpoint') : null;
       if (!ep || !ep.token) return false;
       if (ep.port && location.port && +location.port !== ep.port) {
         location.replace(`http://127.0.0.1:${ep.port}/#${ep.token}`);
@@ -212,7 +248,7 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = input.value.trim();
-    if (!text || sending || !linked) return;
+    if (!text || sending || switchingModel || !linked || chosenProvider() !== provider) return;
     const id =
       uncertain && uncertain.text === text && uncertain.session === sessionId
         ? uncertain.id
@@ -310,7 +346,7 @@
     chatBtn.setAttribute('aria-expanded', String(value));
     const shell = pyApi();
     if (resize && shell && shell.set_expanded)
-      Promise.resolve(shell.set_expanded(value)).catch(() => {});
+      windowAction('set_expanded', [value]);
     if (value) {
       loadModels();
       input.focus();
@@ -396,8 +432,12 @@
     }
     if (first) {
       loadPreferences();
+      loadProviders();
       if (expanded) loadModels();
-    } else if (expanded && modelChanged) loadModels();
+    } else if (modelChanged) {
+      if ($('provider-select')) $('provider-select').value = provider;
+      if (expanded) loadModels();
+    }
   }
   function onOffline() {
     if (offlineSince === null) offlineSince = performance.now();
@@ -416,16 +456,24 @@
   }
   async function poll() {
     const start = performance.now();
+    let s;
     try {
-      const s = await api('/api/state' + (haveAudio !== null ? '?have=' + haveAudio : ''));
-      const reconnect = !linked;
-      if (reconnect) notice();
-      onState(s, performance.now() - start);
+      s = await api('/api/state' + (haveAudio !== null ? '?have=' + haveAudio : ''));
     } catch (_) {
       onOffline();
-      await refreshEndpoint();
+      // Recovery is independent of HTTP polling even if the native bridge hangs.
+      refreshEndpoint();
     }
-    setTimeout(poll, offlineSince === null ? 150 : 1000);
+    try {
+      if (s) {
+        if (!linked) notice();
+        onState(s, performance.now() - start);
+      }
+    } catch (_) {
+      notice('Could not update the Companion. Retrying…');
+    } finally {
+      setTimeout(poll, offlineSince === null ? 150 : 1000);
+    }
   }
   function drive(now) {
     requestAnimationFrame(drive);
@@ -434,34 +482,66 @@
       Sage.setAudioLevel(i >= 0 && i < env.levels.length ? env.levels[i] : 0);
     }
   }
+  const providerLabels = { cloud: 'Gemini', ollama: 'Ollama', openai: 'OpenAI',
+    anthropic: 'Claude', openrouter: 'OpenRouter', deepseek: 'DeepSeek', xai: 'Grok' };
+  const chosenProvider = () => ($('provider-select') && $('provider-select').value) || provider;
+  async function loadProviders() {
+    if (!$('provider-select')) return;
+    try {
+      const data = await api('/api/providers');
+      const select = $('provider-select');
+      select.textContent = '';
+      data.providers.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.label + (item.configured ? '' : ' · no key');
+        select.appendChild(option);
+      });
+      select.value = provider;
+      if (expanded) loadModels();
+    } catch (err) { notice(err.message); }
+  }
+  listen('provider-select', 'change', () => {
+    loadModels();
+    if (chosenProvider() !== provider) notice('Choose a model to switch providers.');
+    else notice();
+  });
   async function loadModels(refresh = false) {
     if (!linked || !$('model-select')) return;
+    const requestedProvider = chosenProvider();
     const serial = ++modelSerial;
     modelLoading = true;
+    const select = $('model-select');
+    select.textContent = '';
+    const loading = document.createElement('option');
+    loading.value = '';
+    loading.textContent = 'Loading models…';
+    select.appendChild(loading);
     controls();
     try {
-      const data = await api('/api/models' + (refresh ? '?refresh=1' : ''), {}, 65000);
-      if (serial !== modelSerial || data.provider !== provider) return;
-      modelProvider = data.provider;
-      const select = $('model-select');
+      const data = await api('/api/models?provider=' + encodeURIComponent(requestedProvider) +
+        (refresh ? '&refresh=1' : ''), {}, 65000);
+      if (serial !== modelSerial || data.provider !== chosenProvider()) return;
       select.textContent = '';
       const choices = data.models.slice();
-      if (!choices.some((item) => item.id === model))
+      if (requestedProvider === provider && model && !choices.some((item) => item.id === model))
         choices.unshift({ id: model, label: model + ' (current)' });
+      if (requestedProvider !== provider || !choices.length) {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = choices.length ? 'Choose a model to switch' : 'No models found · see below';
+        select.appendChild(placeholder);
+      }
       choices.forEach((item) => {
         const option = document.createElement('option');
         option.value = item.id;
         option.textContent = item.label === item.id ? item.id : item.label + ' · ' + item.id;
         select.appendChild(option);
       });
-      select.value = model;
-      $('provider-label').textContent = provider === 'cloud' ? 'GEMINI' : 'OLLAMA';
-      $('model-source').textContent =
-        data.source === 'live'
-          ? 'From provider'
-          : data.source === 'cached'
-            ? 'Cached models'
-            : 'Saved models';
+      select.value = requestedProvider === provider ? model : '';
+      $('provider-label').textContent = (providerLabels[requestedProvider] || requestedProvider).toUpperCase();
+      $('model-source').textContent = data.source === 'live' ? 'From provider' :
+        data.source === 'cached' ? 'Cached models' : 'Saved models';
       $('model-warning').textContent = data.warning || '';
       $('model-warning').hidden = !data.warning;
     } catch (err) {
@@ -474,17 +554,26 @@
     }
   }
   async function changeModel(value) {
-    if (!linked || !value) return;
+    if (!linked || !value || sending || switchingModel || modelLoading) return;
+    const selected = chosenProvider();
+    switchingModel = true;
+    controls();
     try {
-      const s = await api('/api/model', {
+      const changing = selected !== provider;
+      const s = await api(changing ? '/api/provider' : '/api/model', {
         method: 'POST',
-        body: JSON.stringify({ model: value, provider: modelProvider || provider }),
+        body: JSON.stringify(changing ? { provider: selected, model: value,
+          expected_provider: provider, session_id: sessionId } :
+          { model: value, provider, session_id: sessionId }),
       });
       onState(s, 0);
       notice();
     } catch (err) {
       notice(err.message);
-      if ($('model-select')) $('model-select').value = model;
+      if ($('model-select')) $('model-select').value = selected === provider ? model : '';
+    } finally {
+      switchingModel = false;
+      controls();
     }
   }
   listen('model-select', 'change', () => changeModel($('model-select').value));
@@ -560,7 +649,7 @@
   });
   listen('btn-close', 'click', async () => {
     const shell = pyApi();
-    if (shell && shell.close) shell.close();
+    if (shell && shell.close) await windowAction('close');
     else {
       await stopSpeech();
       window.close();
@@ -568,13 +657,23 @@
   });
   listen('btn-minimize', 'click', () => {
     const shell = pyApi();
-    if (shell && shell.minimize) shell.minimize();
+    if (shell && shell.minimize) windowAction('minimize');
   });
+  function renderPin(state) {
+    const pin = $('btn-pin');
+    if (!pin || !state || typeof state.on_top !== 'boolean') return;
+    pin.setAttribute('aria-pressed', String(state.on_top));
+    pin.title = state.on_top ? 'Unpin: allow other windows in front' : 'Pin: keep WOS above other windows';
+    pin.setAttribute('aria-label', pin.title);
+  }
   listen('btn-pin', 'click', async () => {
-    const shell = pyApi();
-    if (shell && shell.set_on_top) {
-      const state = await shell.set_on_top($('btn-pin').getAttribute('aria-pressed') !== 'true');
-      $('btn-pin').setAttribute('aria-pressed', String(state.on_top));
+    const pin = $('btn-pin');
+    if (pin.disabled) return;
+    pin.disabled = true;
+    try {
+      renderPin(await windowAction('set_on_top', [pin.getAttribute('aria-pressed') !== 'true']));
+    } finally {
+      pin.disabled = false;
     }
   });
   async function shellReady() {
@@ -584,12 +683,14 @@
     if ($('btn-pin')) $('btn-pin').hidden = false;
     if ($('btn-minimize')) $('btn-minimize').hidden = false;
     if (shell.get_window_state) {
-      const state = await shell.get_window_state();
-      setExpanded(state.expanded, false);
-      if ($('btn-pin')) $('btn-pin').setAttribute('aria-pressed', String(state.on_top));
+      const state = await windowAction('get_window_state');
+      if (state) {
+        setExpanded(state.expanded, false);
+        renderPin(state);
+      }
     }
   }
-  window.addEventListener('pywebviewready', shellReady);
+  window.addEventListener('pywebviewready', () => shellReady().catch(() => notice('Window controls are unavailable.')));
   if (pyApi()) shellReady().catch(() => notice('Window controls are unavailable.'));
   window.addEventListener('pagehide', () => {
     if (!pyApi() && linked)
@@ -619,7 +720,7 @@
       next = null;
       busy = true;
       try {
-        await shell.resize(size[0], size[1]);
+        await windowAction('resize', size);
       } finally {
         busy = false;
         if (next) resizeWindow();
@@ -635,6 +736,9 @@
       if (!drag) return;
       next = [Math.round(drag.w + e.screenX - drag.x), Math.round(drag.h + e.screenY - drag.y)];
       resizeWindow();
+    });
+    handle.addEventListener('pointercancel', () => {
+      drag = null;
     });
     handle.addEventListener('pointerup', () => {
       drag = null;

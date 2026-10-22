@@ -617,3 +617,13 @@ body.expanded .chat-title {
 body:not(.desktop) .resize-handle {
   display: none;
 }
+
+.providerbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 0;
+  flex: none;
+}
+.providerbar label { font-size: 10px; color: var(--muted); }
+#provider-select { flex: 1; font-size: 11px; padding: 5px 7px; }

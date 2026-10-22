@@ -12,7 +12,7 @@
     speaking: { speed: 0.23, pulse: 0.35, energy: 0.45 },
     listening: { speed: 0.22, pulse: 0.3, energy: 0.4 },
   };
-  const prefs = { preset: 'orb', accent: '#a78bfa', size: 1, glow: 0.7, motion: 1, theme: 'dark' };
+  const prefs = { preset: 'crystal', accent: '#a78bfa', size: 1, glow: 0.7, motion: 1, theme: 'dark' };
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   let state = 'idle',
     side = 300,
@@ -44,6 +44,66 @@
     ctx.lineWidth = width;
     ctx.stroke();
   }
+  // An icosahedron projected onto a 2D canvas. Depth-sorted edges leave the
+  // center hollow; a separate illuminated core sits between back/front edges.
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const vertices = [[-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]];
+  const edges = [];
+  vertices.forEach((a, i) => vertices.forEach((b, j) => {
+    if (j > i && Math.abs(Math.hypot(...a.map((v, k) => v - b[k])) - 2) < 0.01)
+      edges.push([i, j]);
+  }));
+  function crystal(pulse, motion) {
+    const expansion = 1 + (pulse * 0.018 + level * motion * 0.16);
+    const yaw = angle * 0.8 + 0.35, pitch = angle * 0.37 + 0.28;
+    const points = vertices.map(([x, y, z]) => {
+      const rx = x * Math.cos(yaw) + z * Math.sin(yaw);
+      const rz = -x * Math.sin(yaw) + z * Math.cos(yaw);
+      const ry = y * Math.cos(pitch) - rz * Math.sin(pitch);
+      const depth = y * Math.sin(pitch) + rz * Math.cos(pitch);
+      const perspective = 5 / (5 - depth * 0.35);
+      return { x: rx * 36 * expansion * perspective,
+        y: ry * 36 * expansion * perspective, z: depth };
+    });
+    const ordered = edges.map(([a, b]) => ({ a: points[a], b: points[b], z: (points[a].z + points[b].z) / 2 }))
+      .sort((a, b) => a.z - b.z);
+    function edge(item) {
+      const depth = (item.z + 2) / 4;
+      ctx.beginPath();
+      ctx.moveTo(item.a.x, item.a.y);
+      ctx.lineTo(item.b.x, item.b.y);
+      ctx.strokeStyle = rgba(0.12 + depth * 0.6 + level * 0.12);
+      ctx.lineWidth = 0.6 + depth * 0.65;
+      ctx.stroke();
+    }
+    ordered.filter((e) => e.z < 0).forEach(edge);
+    const radius = 14 + energy * 4 + level * motion * 8 + pulse * 0.6;
+    const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, radius * 3);
+    glow.addColorStop(0, rgba((0.28 + level * 0.25) * prefs.glow));
+    glow.addColorStop(0.5, rgba(0.1 * prefs.glow));
+    glow.addColorStop(1, rgba(0));
+    ctx.fillStyle = glow;
+    ctx.fillRect(-70, -70, 140, 140);
+    const core = ctx.createRadialGradient(-radius * 0.3, -radius * 0.35, 0, 0, 0, radius);
+    core.addColorStop(0, prefs.theme === 'light' ? '#ffffff' : '#f5f2ff');
+    core.addColorStop(0.24, rgba(0.95));
+    core.addColorStop(0.72, rgba(0.45 + level * 0.2));
+    core.addColorStop(1, rgba(0.08));
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, TAU);
+    ctx.fill();
+    ring(radius + 3, 0, TAU, 0.18 + level * 0.2, 0.7);
+    ordered.filter((e) => e.z >= 0).forEach(edge);
+    points.filter((p) => p.z > 0).forEach((p) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 1.1 + p.z * 0.3, 0, TAU);
+      ctx.fillStyle = rgba(0.65);
+      ctx.fill();
+    });
+  }
   function draw(now) {
     requestAnimationFrame(draw);
     const dt = Math.min((now - last) / 1000, 0.05);
@@ -71,7 +131,9 @@
     halo.addColorStop(1, rgba(0));
     ctx.fillStyle = halo;
     ctx.fillRect(-120, -120, 240, 240);
-    if (prefs.preset === 'wave') {
+    if (prefs.preset === 'crystal') {
+      crystal(pulse, motion);
+    } else if (prefs.preset === 'wave') {
       for (let i = -14; i <= 14; i++) {
         const shape = Math.exp((-i * i) / 110);
         const h = 3 + shape * (6 + Math.abs(Math.sin(i * 0.7 + angle * 4)) * (8 + level * 52));
