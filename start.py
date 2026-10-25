@@ -8,6 +8,10 @@ import sys
 
 from core.config import load_settings
 
+TUI_REQUESTED = "--plain" not in sys.argv and (
+    "--tui" in sys.argv or (sys.stdin.isatty() and sys.stdout.isatty())
+)
+
 # core.session and core.conversation load settings.json when they are imported,
 # so check it first and report problems cleanly instead of with a traceback.
 try:
@@ -1490,7 +1494,8 @@ def free_up_chat_slot():
 # Main loop
 # ------------------------------
 
-show_header()
+if not TUI_REQUESTED:
+    show_header()
 
 def choose_new_cloud_key_model():
     if session.provider != "ollama" and api_key(session.provider):
@@ -1588,35 +1593,7 @@ def run_loop():
 
         if command == "/restart":
             print("WOS: Restarting...")
-            tts_speaker.shutdown()
-
-            if overlay_server is not None:
-                os.environ["WOS_RESTART_PORT"] = str(overlay_server.port)
-                os.environ["WOS_RESTART_TOKEN"] = overlay_server.token
-                overlay_server.close()  # free the port for the new process
-
-            restart_args = [sys.executable] + sys.argv
-
-            if os.name == "nt":
-                # os.execv on Windows does not quote arguments that contain spaces
-                # and returns control to the shell immediately. Start the new
-                # process with subprocess instead and wait for it to finish.
-                process = subprocess.Popen(restart_args)
-
-                try:
-                    exit_code = process.wait()
-                except KeyboardInterrupt:
-                    # Ctrl+C is delivered to the new process as well. Give it a
-                    # few seconds to exit on its own, then stop it.
-                    try:
-                        exit_code = process.wait(timeout=5)
-                    except (subprocess.TimeoutExpired, KeyboardInterrupt):
-                        process.terminate()
-                        exit_code = process.wait()
-
-                raise SystemExit(exit_code)
-
-            os.execv(sys.executable, restart_args)
+            return "restart"
 
         if command == "/new":
             start_new_chat()
@@ -1753,17 +1730,69 @@ def run_loop():
         overlay_backend.speak_terminal_reply(reply)
 
 
+
+def restart_wos():
+    tts_speaker.shutdown()
+
+    if overlay_server is not None:
+        os.environ["WOS_RESTART_PORT"] = str(overlay_server.port)
+        os.environ["WOS_RESTART_TOKEN"] = overlay_server.token
+        overlay_server.close()  # free the port for the new process
+
+    restart_args = [sys.executable] + sys.argv
+
+    if os.name == "nt":
+        # os.execv on Windows does not quote arguments that contain spaces
+        # and returns control to the shell immediately. Start the new
+        # process with subprocess instead and wait for it to finish.
+        process = subprocess.Popen(restart_args)
+
+        try:
+            exit_code = process.wait()
+        except KeyboardInterrupt:
+            # Ctrl+C is delivered to the new process as well. Give it a
+            # few seconds to exit on its own, then stop it.
+            try:
+                exit_code = process.wait(timeout=5)
+            except (subprocess.TimeoutExpired, KeyboardInterrupt):
+                process.terminate()
+                exit_code = process.wait()
+
+        raise SystemExit(exit_code)
+
+    os.execv(sys.executable, restart_args)
+
+terminal_result = None
+using_tui = False
 try:
-    overlay_backend.hold_command()
-    try:
-        choose_new_cloud_key_model()
-    finally:
-        overlay_backend.release_command()
-    run_loop()
+    if TUI_REQUESTED:
+        try:
+            from core.terminal_ui import run_terminal_ui
+        except ImportError as error:
+            # Only the optional UI dependency gets a plain-terminal fallback.
+            if not (error.name or "").startswith(("textual", "rich")):
+                raise
+            print("WOS: Terminal UI is unavailable. Install it with: pip install 'textual>=8.2.8,<9'")
+            show_header()
+        else:
+            using_tui = True
+            terminal_result = run_terminal_ui(globals())
+    if not using_tui:
+        overlay_backend.hold_command()
+        try:
+            choose_new_cloud_key_model()
+        finally:
+            overlay_backend.release_command()
+        terminal_result = run_loop()
 except KeyboardInterrupt:
     print("\nWOS: Interrupted. Goodbye.")
 finally:
     tts_speaker.shutdown()
-    overlay_backend.release_command()
+    # The TUI command worker owns its lock and releases it in its own finally.
+    if not using_tui:
+        overlay_backend.release_command()
     if overlay_server is not None:
         overlay_server.close()
+
+if terminal_result == "restart":
+    restart_wos()

@@ -4,3 +4,6 @@ google-genai
 httpx
 # Optional: the desktop window. Without it the overlay opens in your browser.
 pywebview>=5.0
+
+# Full-screen terminal UI. --plain retains the basic prompt.
+textual>=8.2.8,<9

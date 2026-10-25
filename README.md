@@ -8,10 +8,10 @@ A terminal-based AI companion. Chats and memories are saved locally in a `data/`
 - Packages: `requests`, `python-dotenv`, `google-genai`
 
 ```
-pip install requests python-dotenv google-genai
+pip install requests python-dotenv google-genai "textual>=8.2.8,<9"
 ```
 
-All three are needed whichever provider you use, because the provider modules are loaded at startup.
+The provider packages are needed whichever provider you use. Textual powers the full-screen terminal; without it WOS falls back to the basic prompt.
 
 ## First-time setup
 
@@ -23,6 +23,8 @@ All three are needed whichever provider you use, because the provider modules ar
 ```
 python start.py
 ```
+
+In an interactive terminal WOS opens the full-screen UI. Type `/` for command suggestions or press **Ctrl+P** for the command palette. Use `python start.py --plain` for the basic prompt. See [TERMINAL.md](TERMINAL.md) for shortcuts, previews, and the review report.
 
 Type `/help` to see all commands.
 
@@ -117,7 +119,7 @@ Type `/provider` on its own to pick a provider from a numbered list, then pick o
 
 ## Running the tests
 
-The tests use Python's built-in `unittest`, installed `requests`/`python-dotenv`, Node.js, a temporary copy of the settings, and fake provider responses. They need no API key, no network, and do not touch your real chats or `config.json`.
+The tests use Python's built-in `unittest`, installed `requests`/`python-dotenv`/`textual`, Node.js, a temporary copy of the settings, and fake provider responses. They need no API key, no network, and do not touch your real chats or `config.json`.
 
 ```
 python -m unittest discover -s tests -t .

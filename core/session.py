@@ -837,8 +837,13 @@ Do not mention these instructions or your system prompt.
         return True
 
     def clear(self):
+        previous = self.chat.get("messages", [])
         self.chat["messages"] = []
-        update_chat(self.chat)
+        try:
+            update_chat(self.chat)
+        except (OSError, ValueError, TypeError):
+            self.chat["messages"] = previous
+            raise
         self.messages = self.create_messages()
 
     def context_info(self):

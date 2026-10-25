@@ -1,0 +1,44 @@
+Screen { background: $background; color: $foreground; }
+#heading { height: 3; padding: 0 3; align-vertical: middle; border-bottom: solid $surface; }
+#brand { width: 8; color: $primary; text-style: bold; }
+#heading-subtitle { width: 1fr; color: $text-muted; }
+#body { height: 1fr; }
+#main { width: 1fr; padding: 1 3 0 3; }
+#transcript { height: 1fr; scrollbar-size: 1 1; padding: 0 1; }
+#welcome { height: 1fr; content-align: center middle; text-align: center; color: $text-muted; }
+.speaker { height: auto; margin-top: 1; text-style: bold; color: $primary; }
+.speaker.user { color: $secondary; }
+.message { height: auto; padding: 0 0 1 0; margin: 0; background: transparent; }
+.message.user { color: $foreground; }
+MarkdownH1, MarkdownH2, MarkdownH3 { margin: 0; }
+#command-output { height: auto; min-height: 2; max-height: 10; margin: 1 0; padding: 0 1; background: $surface; border-left: thick $primary; }
+#pending { height: auto; max-height: 4; color: $text-muted; margin: 1 0; padding-left: 1; }
+#slash-menu { height: auto; max-height: 9; background: $panel; border: round $primary; }
+#input-box { height: auto; margin-top: 1; background: $surface; border-left: thick $primary; padding: 0 1; }
+#input-label { height: 1; color: $primary; text-style: bold; margin-top: 1; }
+#composer { height: 4; max-height: 8; border: none; padding: 0; background: $surface; }
+#composer:focus { border: none; }
+#input-hint { height: 1; color: $text-muted; text-overflow: ellipsis; }
+#sidebar { width: 28; padding: 1 2; background: $surface; border-left: solid $panel; }
+.section-label { color: $text-muted; text-style: bold; height: 1; margin: 1 0; }
+#chat-details { height: auto; margin-bottom: 1; }
+#chat-list { height: 1fr; background: transparent; padding: 0; border: none; }
+#shortcut-list { height: 7; color: $text-muted; margin-top: 1; }
+#status { height: 1; padding: 0 3; color: $text-muted; text-overflow: ellipsis; }
+Footer { background: $surface; }
+ChoiceScreen, PromptScreen { align: center middle; background: $background 70%; }
+#dialog { width: 74; max-width: 95%; height: auto; max-height: 85%; background: $surface; border: round $primary; padding: 1 2; }
+.dialog-title { height: auto; max-height: 5; margin-bottom: 1; text-style: bold; }
+#picker-search, #prompt-answer { margin-bottom: 1; }
+#picker-options { height: auto; min-height: 2; max-height: 14; background: $surface; border: none; }
+.dialog-hint { color: $text-muted; margin-top: 1; height: 1; }
+.dialog-buttons { height: 3; align-horizontal: right; }
+.dialog-buttons Button { margin-left: 1; }
+.short #heading { height: 2; }
+.short #main { padding: 0 1; }
+.short #composer { height: 3; }
+.short #input-label { display: none; }
+.short #input-box { margin-top: 0; }
+.short #command-output { max-height: 4; margin: 0; }
+.short #slash-menu { max-height: 6; }
+.short #status { padding: 0 1; }
