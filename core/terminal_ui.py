@@ -1,4 +1,5 @@
 """WOS's full-screen terminal view. Session and commands stay in the existing runtime."""
+import asyncio
 from rich.text import Text
 from textual import events, on
 from textual.app import App, ComposeResult
@@ -226,6 +227,9 @@ class WosTerminal(App):
         self.rows = {}
         self.total = 0
         self.signature = None
+        self._history_nodes = {}
+        self._rendered_session = None
+        self._history_lock = asyncio.Lock()
         self.pending = None
         self._submission = None
         self.drafts = {}
@@ -358,33 +362,75 @@ class WosTerminal(App):
         self.rows.update((start + i, message) for i, message in enumerate(history['messages']))
 
     async def render_history(self, character, *, older=False):
+        async with self._history_lock:
+            await self._render_history(character, older=older)
+
+    async def _render_history(self, character, *, older=False):
         messages = tuple((i, m['role'], m['content']) for i, m in sorted(self.rows.items()))
         signature = (character, messages)
         if signature == self.signature:
             return
-        follow = self.transcript.is_vertical_scroll_end
-        old_y, old_height = self.transcript.scroll_y, self.transcript.virtual_size.height
-        await self.transcript.remove_children()
-        widgets = []
+        follow = self.transcript.is_vertical_scroll_end or self._rendered_session != self.session_id
+        nodes = self._history_nodes
+        incoming = {i: (role, content) for i, role, content in messages}
+        reset = self._rendered_session != self.session_id or any(
+            i not in incoming or incoming[i] != entry[2:] for i, entry in nodes.items()
+        )
+        # Keep the first existing message fixed when earlier history is inserted.
+        anchor = None
+        if older and nodes:
+            first_label = nodes[min(nodes)][0]
+            anchor = (first_label, first_label.region.y - self.transcript.content_region.y)
+        if reset or not messages or not nodes:
+            await self.transcript.remove_children()
+            nodes.clear()
         if not messages:
-            widgets.append(Static(
+            await self.transcript.mount(Static(
                 f'WOS\n\nA little space to think.\n\nTalk with {character}, or type / to explore commands.\n'
                 'Ctrl+P commands    Ctrl+O chats    F2 models', id='welcome', markup=False))
         else:
-            first = min(self.rows)
-            if first > 0:
-                widgets.append(Button('Load earlier messages', id='load-older'))
-            for _, role, content in messages:
-                widgets.extend([Static('YOU' if role == 'user' else character.upper(),
-                    classes='speaker ' + role, markup=False), Markdown(content, classes='message ' + role, open_links=False)])
-        await self.transcript.mount(*widgets)
+            buttons = list(self.transcript.query('#load-older'))
+            if min(incoming) == 0:
+                for button in buttons:
+                    await button.remove()
+            elif not buttons:
+                await self.transcript.mount(Button('Load earlier messages', id='load-older'), before=0)
+            added = []
+            try:
+                new_messages = [(i, role, content) for i, role, content in messages if i not in nodes]
+                # Consecutive new messages share one mount, preserving all existing
+                # Markdown widgets (and their measured heights) on ordinary replies.
+                groups = {}
+                existing = sorted(nodes)
+                for i, role, content in new_messages:
+                    before = next((j for j in existing if j > i), None)
+                    label = Static('YOU' if role == 'user' else character.upper(),
+                        classes='speaker ' + role, markup=False)
+                    document = Markdown(classes='message ' + role, open_links=False)
+                    groups.setdefault(before, []).extend([label, document])
+                    added.append((i, label, document, role, content))
+                for before, widgets in groups.items():
+                    await self.transcript.mount(*widgets, before=nodes[before][0] if before is not None else None)
+                # Parsing runs asynchronously. Wait for content to mount before
+                # restoring an older-history anchor or following the last message.
+                await asyncio.gather(*(document.update(content) for _, _, document, _, content in added))
+                nodes.update((i, (label, document, role, content)) for i, label, document, role, content in added)
+                for label, _, role, _ in nodes.values():
+                    label.update('YOU' if role == 'user' else character.upper())
+            except Exception:
+                self._rendered_session = None
+                self.signature = None
+                raise
+        self._rendered_session = self.session_id
         self.signature = signature
-        if older:
-            self.call_after_refresh(lambda: self.transcript.scroll_to(y=old_y + self.transcript.virtual_size.height - old_height, animate=False))
-        elif follow:
-            self.transcript.scroll_end(animate=False, immediate=False)
-        else:
-            self.call_after_refresh(lambda: self.transcript.scroll_to(y=old_y, animate=False))
+        if anchor is not None and anchor[0].is_mounted:
+            label, offset = anchor
+            self.call_after_refresh(lambda: self.transcript.scroll_to(
+                y=label.virtual_region.y - offset, animate=False, immediate=True))
+        elif follow and not older:
+            self.call_after_refresh(lambda: self.transcript.scroll_end(animate=False, immediate=True))
+        # Otherwise leave scroll_y alone. Replacing the entire transcript used
+        # to clamp it to zero before asynchronous Markdown regained its height.
 
     def update_chats(self):
         chats = self.namespace['load_index']()

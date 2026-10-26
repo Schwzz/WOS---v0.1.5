@@ -375,3 +375,22 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
             finally:
                 resume.set()
                 self.app.bridge.close()
+
+    async def test_background_reply_retains_existing_rendered_messages(self):
+        for i in range(5):
+            self.session._record_exchange('Question ' + str(i), 'Answer ' + str(i))
+        async with self.app.run_test(size=(80, 24)) as pilot:
+            await self.ready()
+            await pilot.pause()
+            before = list(self.app.query(Markdown))
+            self.app.transcript.scroll_to(y=10, animate=False, immediate=True)
+            await pilot.pause()
+            position = self.app.transcript.scroll_y
+            self.assertFalse(self.app.transcript.is_vertical_scroll_end)
+            with mock.patch('core.session.chat', return_value='A background answer'):
+                await asyncio.to_thread(self.backend.send_message, 'A background question', 'ui')
+            await self.wait_for(lambda: len(self.app._history_nodes) == 12)
+            await pilot.pause()
+            after = list(self.app.query(Markdown))
+            self.assertEqual(after[:len(before)], before)
+            self.assertEqual(self.app.transcript.scroll_y, position)

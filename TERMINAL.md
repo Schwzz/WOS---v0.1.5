@@ -73,7 +73,7 @@ thread ownership, shutdown/restart, and failure handling.
 | Early quit handling could interfere with framework shutdown | Separated application shutdown state; verified Ctrl+Q and terminal restoration |
 | Terminal resizing could retain a sidebar sized for the previous width | Uses the resize event's dimensions; tested from 48×18 to 160×48 |
 | Pending replies or prompts could block exit, or leave a command lock held | One command worker owns/releases the lock; closing resolves prompts and stops speech |
-| Full transcript remounts caused unnecessary layout work | Batch mounts, revision checks, and retained reading position |
+| Rebuilding history could jump to the top during asynchronous rendering on Windows | Retains existing message widgets, waits for new Markdown content to mount, and restores the older-history anchor after layout |
 | Character changes and failed renders could leave stale history labels | Character-aware history signatures and retryable revisions |
 | Failed replies could discard submitted text or overwrite the next draft | Restores an empty composer and retains unsent text in command output when a next draft exists |
 | Clearing a chat before a failed save left the in-memory messages empty | Restores messages on a failed clear save; regression checks memory, context, and disk |
@@ -104,7 +104,7 @@ node tests/js/chat_harness.js
 node tests/js/avatar_harness.js
 ```
 
-The combined suite passes **569 tests**, including 21 new terminal regressions.
+The combined suite passes **570 tests**, including 22 new terminal regressions.
 The new headless Textual tests exercise actual key events and the existing WOS
 command loop with temporary chats and fake provider responses. They cover
 completion, filtering, provider/model selection, destructive confirmations, draft
