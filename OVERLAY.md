@@ -1,7 +1,8 @@
 # WOS Companion
 
-The Companion and chat views use the same session, character, models, memories,
-chat files, and voice player as the terminal.
+The Companion, full-screen terminal, and chat views use the same session, character,
+models, memories, chat files, and voice player. See [TERMINAL.md](TERMINAL.md) for
+terminal shortcuts and slash-command menus.
 
 ## Run
 
@@ -117,7 +118,7 @@ the filesystem; after completely closing and relaunching the terminal, reopen
 ## Validation
 
 ```text
-python -m pip install requests python-dotenv
+python -m pip install requests python-dotenv "textual>=8.2.8,<9"
 python -m unittest discover -s tests -t .
 node --check overlay/web/chat.js
 node --check overlay/web/sage.js
