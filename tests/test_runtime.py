@@ -113,11 +113,15 @@ class RuntimeTests(unittest.TestCase):
         from core.runtime import ApplicationRuntime
         with Sandbox(), mock.patch('core.runtime.FishAudioSpeaker'), mock.patch('core.runtime.OverlayServer') as servers:
             runtime = ApplicationRuntime()
-            self.addCleanup(runtime.close)
-            servers.return_value.start.side_effect = OSError('port busy')
-            self.assertRaises(OSError, runtime.start_server)
-            servers.return_value.close.assert_called_once()
-            self.assertIsNone(runtime.server)
+            try:
+                servers.return_value.start.side_effect = OSError('port busy')
+                self.assertRaises(OSError, runtime.start_server)
+                servers.return_value.close.assert_called_once()
+                self.assertIsNone(runtime.server)
+            finally:
+                # Windows cannot remove the Sandbox while runtime.lock is open.
+                runtime.close()
+            self.assertTrue(runtime._ownership_released.is_set())
 
     def test_close_suppresses_inflight_reply_without_waiting_for_session_lock(self):
         from core.runtime import ApplicationRuntime
