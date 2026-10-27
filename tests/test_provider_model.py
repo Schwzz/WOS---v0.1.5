@@ -1,6 +1,6 @@
 """End-to-end tests for the /provider and /model menus.
 
-WOS runs as a real subprocess. A fake `requests` answers Ollama's model list
+Auralis runs as a real subprocess. A fake `requests` answers Ollama's model list
 (see FAKE_REQUESTS in test_start_integration.py), so these tests never depend
 on a real Ollama being installed or running.
 """
@@ -79,7 +79,7 @@ class ProviderMenuTests(ProviderModelTestCase):
 
         self.assertNoCrash(result)
         self.assertIn("Provider was not changed", result.stdout)
-        self.assertIn("WOS Status", result.stdout)
+        self.assertIn("Auralis Status", result.stdout)
         self.assertEqual(self.chat_settings(),
                          ("cloud", "gemini-3.5-flash-lite"))
 
@@ -174,7 +174,7 @@ class ProviderMenuTests(ProviderModelTestCase):
         self.assertNoCrash(ctrl_c)
         self.assertIn("Provider was not changed", eof.stdout)
         self.assertIn("Provider was not changed", ctrl_c.stdout)
-        self.assertIn("WOS Status", ctrl_c.stdout)
+        self.assertIn("Auralis Status", ctrl_c.stdout)
         self.assertEqual(self.chat_settings(),
                          ("cloud", "gemini-3.5-flash-lite"))
 
@@ -227,9 +227,9 @@ class ProviderOtherModelTests(ProviderModelTestCase):
 
         self.assertNoCrash(result)
         self.assertIn("2. Other (type a model name)", result.stdout)
-        self.assertIn("model names WOS already knows", result.stdout)
+        self.assertIn("model names Auralis already knows", result.stdout)
         self.assertNotIn("3. ", result.stdout.split("Available Models")[1]
-                         .split("WOS: Number of the model")[0])
+                         .split("Auralis: Number of the model")[0])
 
     def test_typed_model_is_validated_until_it_is_acceptable(self):
         result = self.wos.run(lines(
@@ -265,7 +265,7 @@ class ProviderOtherModelTests(ProviderModelTestCase):
 
         self.assertNoCrash(eof)
         self.assertNoCrash(ctrl_c)
-        self.assertIn("WOS Status", ctrl_c.stdout)
+        self.assertIn("Auralis Status", ctrl_c.stdout)
         self.assertEqual(self.chat_settings(),
                          ("cloud", "gemini-3.5-flash-lite"))
 
@@ -297,7 +297,7 @@ class OllamaUnavailableTests(ProviderModelTestCase):
         reasons = {
             "down": "Ollama is not running.",
             "timeout": "Ollama took too long to answer.",
-            "garbage": "Ollama sent an answer WOS could not read.",
+            "garbage": "Ollama sent an answer Auralis could not read.",
             "error": "Ollama returned an error",
         }
 
@@ -534,7 +534,7 @@ class ModelMenuTests(ProviderModelTestCase):
         self.assertNoCrash(ctrl_c)
         self.assertIn("Model was not changed", eof.stdout)
         self.assertIn("Model was not changed", ctrl_c.stdout)
-        self.assertIn("WOS Status", ctrl_c.stdout)
+        self.assertIn("Auralis Status", ctrl_c.stdout)
         self.assertEqual(self.chat_settings(),
                          ("cloud", "gemini-3.5-flash-lite"))
 
@@ -566,7 +566,7 @@ class ModelMenuTests(ProviderModelTestCase):
 
         self.assertNoCrash(eof)
         self.assertNoCrash(ctrl_c)
-        self.assertIn("WOS Status", ctrl_c.stdout)
+        self.assertIn("Auralis Status", ctrl_c.stdout)
         self.assertEqual(self.chat_settings(),
                          ("cloud", "gemini-3.5-flash-lite"))
 
@@ -899,7 +899,7 @@ class OllamaUnavailableMenuTests(ProviderModelTestCase):
         self.assertNoCrash(ctrl_c)
         self.assertIn("Provider was not changed", eof.stdout)
         self.assertIn("Provider was not changed", ctrl_c.stdout)
-        self.assertIn("WOS Status", ctrl_c.stdout)
+        self.assertIn("Auralis Status", ctrl_c.stdout)
         self.assertNotIn("Model name (Enter to cancel)", ctrl_c.stdout)
         self.assertEqual(self.chat_settings(),
                          ("cloud", "gemini-3.5-flash-lite"))
@@ -1012,9 +1012,9 @@ class CloudWordingTests(ProviderModelTestCase):
 
         self.assertNoCrash(result)
         flat = self.flat(result)
-        self.assertIn("These are model names WOS already knows "
+        self.assertIn("These are model names Auralis already knows "
                       "(from your settings and chats).", flat)
-        self.assertIn("WOS cannot check them with your provider", flat)
+        self.assertIn("Auralis cannot check them with your provider", flat)
         self.assertIn("To use a different model, choose Other and type its "
                       "exact name.", flat)
         for claim in ("verified", "supported models", "catalog", "live api",
@@ -1027,7 +1027,7 @@ class CloudWordingTests(ProviderModelTestCase):
 
         self.assertNoCrash(result)
         self.assertIn(
-            "Type the exact model name. WOS can check that it is written "
+            "Type the exact model name. Auralis can check that it is written "
             "correctly, but not that your provider offers it.",
             self.flat(result),
         )

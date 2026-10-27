@@ -34,7 +34,7 @@ def list_installed_model_details(url=None, timeout=3):
     except ValueError:
         # Must come before RequestException: in current versions of requests,
         # a body that is not JSON raises an error that is both.
-        raise OllamaUnavailable("Ollama sent an answer WOS could not read.")
+        raise OllamaUnavailable("Ollama sent an answer Auralis could not read.")
 
     except requests.exceptions.RequestException as error:
         raise OllamaUnavailable(f"Ollama returned an error: {error}")
@@ -42,7 +42,7 @@ def list_installed_model_details(url=None, timeout=3):
     models = data.get("models") if isinstance(data, dict) else None
 
     if not isinstance(models, list):
-        raise OllamaUnavailable("Ollama sent an answer WOS could not read.")
+        raise OllamaUnavailable("Ollama sent an answer Auralis could not read.")
 
     names = {}
 
@@ -74,7 +74,7 @@ def list_installed_models(url=None, timeout=3):
 
 def chat(model, messages):
     if not isinstance(model, str) or not model.strip():
-        print("WLLM: The Ollama model name cannot be empty.")
+        print("Auralis: The Ollama model name cannot be empty.")
         return None
 
     try:
@@ -92,39 +92,39 @@ def chat(model, messages):
         data = response.json()
 
         if not isinstance(data, dict):
-            print("WLLM: Ollama returned an invalid response.")
+            print("Auralis: Ollama returned an invalid response.")
             return None
 
         message = data.get("message")
 
         if not isinstance(message, dict):
-            print("WLLM: Ollama response is missing its message.")
+            print("Auralis: Ollama response is missing its message.")
             return None
 
         reply = message.get("content")
 
         if not isinstance(reply, str) or not reply.strip():
-            print("WLLM: Ollama returned an empty response.")
+            print("Auralis: Ollama returned an empty response.")
             return None
 
         return reply.strip()
 
     except requests.exceptions.ConnectionError:
-        print("WLLM: Could not connect to Ollama. Is Ollama running?")
+        print("Auralis: Could not connect to Ollama. Is Ollama running?")
         return None
 
     except requests.exceptions.Timeout:
-        print("WLLM: The model took too long to respond.")
+        print("Auralis: The model took too long to respond.")
         return None
 
     except requests.exceptions.RequestException as error:
-        print(f"WLLM: Ollama returned an error: {error}")
+        print(f"Auralis: Ollama returned an error: {error}")
         return None
 
     except (ValueError, TypeError, KeyError) as error:
-        print(f"WLLM: Ollama returned an invalid response: {error}")
+        print(f"Auralis: Ollama returned an invalid response: {error}")
         return None
 
     except Exception as error:
-        print(f"WLLM: An unexpected Ollama error occurred: {error}")
+        print(f"Auralis: An unexpected Ollama error occurred: {error}")
         return None

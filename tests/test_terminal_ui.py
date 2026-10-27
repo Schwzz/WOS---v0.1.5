@@ -19,7 +19,7 @@ from core.provider_registry import PROVIDERS
 from core.terminal_bridge import TerminalBridge, Prompt, Ready, Finished
 from core.terminal_ui import WosTerminal, ChoiceScreen, PromptScreen, command_choices
 from core.tts import FishAudioSpeaker
-from textual.widgets import Input, Markdown
+from textual.widgets import Input, Markdown, Static
 
 
 class CompletionTests(unittest.TestCase):
@@ -69,6 +69,11 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
         self.app.composer.move_cursor(self.app.composer.document.end)
         await pilot.pause()
 
+    def test_plain_terminal_branding_keeps_error_severity_colors(self):
+        color = self.ns['color_for_line']
+        self.assertEqual(color('Auralis: Could not save chat.'), self.ns['RED'])
+        self.assertEqual(color('Auralis: Conversation saved.'), self.ns['BLUE'])
+
     async def test_slash_popup_arrows_tab_and_escape_preserve_input(self):
         async with self.app.run_test(size=(110, 36)) as pilot:
             await self.ready()
@@ -92,7 +97,7 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
             with mock.patch('core.session.chat') as chat:
                 await pilot.press('/', 'enter')
                 await self.ready()
-                self.assertTrue(self.app.output.display)
+                self.assertTrue(self.app.query_one('#notice-row').display)
                 self.assertEqual(self.app.composer.text, '')
                 await self.type_text(pilot, '/moodel')
                 await pilot.press('enter')
@@ -100,7 +105,7 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
                 chat.assert_not_called()
                 self.assertFalse(self.session.chat['messages'])
             await pilot.press('ctrl+l')
-            self.assertFalse(self.app.output.display)
+            self.assertFalse(self.app.query_one('#notice-row').display)
 
     async def test_provider_and_model_pickers_share_terminal_session_and_overlay(self):
         self.ns['fetch_installed_model_details'] = lambda: ([('local-test:latest', 1000)], None)
@@ -196,7 +201,7 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(self.app.busy)
                     self.assertEqual(self.backend.get_state()['phase'], 'thinking')
                     await pilot.press('ctrl+t')
-                    self.assertEqual(self.app.theme, 'wos-light')
+                    self.assertEqual(self.app.theme, 'auralis-light')
                     await self.type_text(pilot, 'The next draft')
                     await pilot.press('enter')
                     self.assertEqual(self.app.composer.text, 'The next draft')
@@ -248,7 +253,7 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
                 await pilot.pause()
                 self.assertGreater(self.app.composer.region.width, 20)
                 self.assertLessEqual(self.app.composer.region.bottom, height - 2)
-                self.assertEqual(self.app.sidebar_widget.display, width >= 100 and height >= 24)
+                self.assertFalse(self.app.sidebar_widget.display)
                 await self.type_text(pilot, '/')
                 self.assertTrue(self.app.suggestions.display)
                 self.assertLessEqual(self.app.composer.region.bottom, height - 2)
@@ -299,7 +304,7 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
             await self.ready()
             self.app.send('/status')
             await self.ready()
-            self.assertTrue(self.app.output.display)
+            self.assertTrue(self.app.query_one('#notice-row').display)
             self.ns['show_status'] = original
             self.app.send('/status')
             await self.ready()
@@ -371,7 +376,7 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
                     resume.set()
                     await self.ready()
                     self.assertEqual(self.app.composer.text, 'The next question')
-                    self.assertTrue(self.app.output.display)
+                    self.assertTrue(self.app.query_one('#notice-row').display)
             finally:
                 resume.set()
                 self.app.bridge.close()
@@ -394,3 +399,60 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
             after = list(self.app.query(Markdown))
             self.assertEqual(after[:len(before)], before)
             self.assertEqual(self.app.transcript.scroll_y, position)
+
+    async def test_output_is_compact_and_details_preserve_draft(self):
+        async with self.app.run_test(size=(80, 24)) as pilot:
+            await self.ready()
+            await self.type_text(pilot, 'Keep this draft')
+            self.app.write_output('Auralis: Model changed.\nNew chats keep their defaults.')
+            await pilot.pause()
+            self.assertFalse(self.app.query('#command-output'))
+            self.assertTrue(self.app.query_one('#notice-row').display)
+            self.assertEqual(self.app.query_one('#notice-row').region.height, 1)
+            await pilot.press('f8')
+            self.assertEqual(type(self.app.screen).__name__, 'DetailsScreen')
+            self.assertIn('Model changed.', '\n'.join(self.app.output_lines))
+            await pilot.press('escape')
+            self.assertEqual(self.app.composer.text, 'Keep this draft')
+            self.assertTrue(self.app.composer.has_focus)
+            await pilot.press('ctrl+l')
+            self.assertFalse(self.app.query_one('#notice-row').display)
+            self.assertIn('Model changed.', '\n'.join(self.app.output_lines))
+
+    async def test_output_journal_is_bounded_and_sidebar_opt_in(self):
+        async with self.app.run_test(size=(110, 36)) as pilot:
+            await self.ready()
+            self.assertFalse(self.app.sidebar_widget.display)
+            for i in range(550):
+                self.app.write_output('Line ' + str(i))
+            self.assertEqual(len(self.app.output_lines), 500)
+            self.assertEqual(self.app.output_lines[0], 'Line 50')
+            await pilot.press('ctrl+b')
+            self.assertTrue(self.app.sidebar_widget.display)
+            await pilot.resize_terminal(48, 18)
+            await pilot.pause()
+            self.assertFalse(self.app.sidebar_widget.display)
+            self.assertLessEqual(self.app.composer.region.bottom, 16)
+            await pilot.press('f8')
+            await pilot.pause()
+            journal = self.app.screen.query_one('#details-log')
+            self.assertGreater(journal.scroll_y, 0)
+            position = journal.scroll_y
+            await pilot.press('pageup')
+            await pilot.pause()
+            self.assertLess(journal.scroll_y, position)
+            await pilot.press('pagedown')
+            self.app.write_output('A new detail while reading')
+            await pilot.pause()
+            self.assertEqual(type(self.app.screen).__name__, 'DetailsScreen')
+            await pilot.press('f8')
+            self.assertTrue(self.app.composer.has_focus)
+
+    async def test_brief_notice_does_not_erase_newer_notice(self):
+        async with self.app.run_test() as pilot:
+            await self.ready()
+            self.app.write_output('First notice')
+            old_timer = self.app._notice_timer
+            self.app.write_output('Second notice')
+            self.assertIsNot(old_timer, self.app._notice_timer)
+            self.assertIn('Second notice', str(self.app.query_one('#notice', Static).render()))

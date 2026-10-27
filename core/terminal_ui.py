@@ -1,5 +1,6 @@
-"""WOS's full-screen terminal view. Session and commands stay in the existing runtime."""
+"""Auralis's full-screen terminal view. Session and commands stay in the existing runtime."""
 import asyncio
+from collections import deque
 from rich.text import Text
 from textual import events, on
 from textual.app import App, ComposeResult
@@ -24,7 +25,7 @@ def command_choices(text='/'):
     entries = {}
     for name in KNOWN_COMMANDS:
         topic = HELP_TOPICS.get(name, {})
-        entries[name] = topic.get('summary', 'WOS command')
+        entries[name] = topic.get('summary', 'Auralis command')
         for _, usage, description in topic.get('subcommands', []):
             words = []
             for word in usage.split():
@@ -194,21 +195,49 @@ class PromptScreen(ModalScreen):
         self.dismiss(None)
 
 
+class DetailsScreen(ModalScreen):
+    """Command journal kept out of the conversation; opening it preserves drafts."""
+    BINDINGS = [Binding('escape,f8', 'cancel', 'Back')]
+
+    def __init__(self, lines):
+        super().__init__()
+        self.lines = list(lines)
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id='details-dialog'):
+            yield Static('Activity details', classes='dialog-title')
+            yield RichLog(id='details-log', wrap=True, markup=False, max_lines=500, min_width=1)
+            yield Button('Back to chat', id='details-close')
+            yield Static('Esc / F8 back · latest 500 lines · kept until you quit', classes='dialog-hint')
+
+    def on_mount(self):
+        self.query_one(RichLog).write(Text('\n'.join(self.lines) or 'No activity yet.'))
+        self.query_one(Button).focus()
+
+    @on(Button.Pressed, '#details-close')
+    def close_details(self):
+        self.action_cancel()
+
+    def action_cancel(self):
+        self.dismiss(None)
+
+
 class WosTerminal(App):
-    TITLE = 'WOS'
+    TITLE = 'Auralis'
     CSS_PATH = 'terminal_ui.tcss'
     ENABLE_COMMAND_PALETTE = False
     BINDINGS = [
         Binding('ctrl+p', 'commands', 'Commands', priority=True),
         Binding('ctrl+n', 'new_chat', 'New chat', show=False, priority=True),
-        Binding('ctrl+o', 'chats', 'Chats', priority=True),
-        Binding('f2', 'models', 'Models', priority=True),
+        Binding('ctrl+o', 'chats', 'Chats', show=False, priority=True),
+        Binding('f2', 'models', 'Models', show=False, priority=True),
         Binding('f3', 'providers', 'Providers', show=False, priority=True),
         Binding('f4', 'characters', 'Characters', show=False, priority=True),
         Binding('f6', 'voice', 'Voice', show=False, priority=True),
         Binding('ctrl+b', 'sidebar', 'Sidebar', show=False, priority=True),
         Binding('ctrl+t', 'theme', 'Theme', show=False, priority=True),
-        Binding('ctrl+l', 'dismiss_output', 'Hide output', show=False, priority=True),
+        Binding('ctrl+l', 'dismiss_output', 'Dismiss notice', show=False, priority=True),
+        Binding('f8', 'details', 'Details', show=False, priority=True),
         Binding('pageup', 'history_up', 'Scroll up', show=False, priority=True),
         Binding('pagedown', 'history_down', 'Scroll down', show=False, priority=True),
         Binding('ctrl+c', 'interrupt', 'Stop', show=False, priority=True),
@@ -238,30 +267,32 @@ class WosTerminal(App):
         self._refreshing = False
         self._chat_signature = None
         self._terminal_closing = False
-        self._sidebar_visible = True
+        self._sidebar_visible = False
+        self.output_lines = deque(maxlen=500)
+        self._notice_timer = None
         self._voice_toggle_busy = False
-        self.register_theme(Theme(name='wos-dark', primary='#b9a3ff', secondary='#91b4a2',
-            background='#111114', surface='#19191f', panel='#222229', foreground='#e3e1e9'))
-        self.register_theme(Theme(name='wos-light', primary='#6e4dad', secondary='#4a7560',
-            background='#f5f4f8', surface='#ffffff', panel='#eae8f0', foreground='#282631', dark=False))
-        self.theme = 'wos-dark'
+        self.register_theme(Theme(name='auralis-dark', primary='#8bd5c7', secondary='#dfbb81',
+            background='#111b20', surface='#19282d', panel='#24373c', foreground='#e1ece9'))
+        self.register_theme(Theme(name='auralis-light', primary='#286e64', secondary='#89632b',
+            background='#f7f5ee', surface='#eeece3', panel='#e2e7df', foreground='#243c3a', dark=False))
+        self.theme = 'auralis-dark'
 
     def compose(self) -> ComposeResult:
         with Horizontal(id='heading'):
-            yield Static('WOS', id='brand')
-            yield Static('Your companion, a little closer.', id='heading-subtitle')
+            yield Static('auralis', id='brand')
+            yield Static('', id='heading-subtitle', markup=False)
         with Horizontal(id='body'):
             with Vertical(id='main'):
                 with VerticalScroll(id='transcript'):
                     yield Static('', id='welcome', markup=False)
-                yield RichLog(id='command-output', wrap=True, markup=False, max_lines=500, min_width=1)
+                with Horizontal(id='notice-row'):
+                    yield Static('', id='notice', markup=False)
+                    yield Button('Details F8', id='details-toggle')
                 yield Static('', id='pending', markup=False)
                 yield OptionList(id='slash-menu', markup=False)
                 with Vertical(id='input-box'):
-                    yield Static('MESSAGE', id='input-label', markup=False)
                     yield Composer(id='composer', placeholder='Message your companion…  / for commands',
                         show_line_numbers=False, tab_behavior='focus')
-                    yield Static('Enter send  ·  Shift+Enter / Ctrl+J newline  ·  Esc stop', id='input-hint')
             with Vertical(id='sidebar'):
                 yield Static('CURRENT CHAT', classes='section-label')
                 yield Static('', id='chat-details', markup=False)
@@ -275,13 +306,13 @@ class WosTerminal(App):
         self.composer = self.query_one('#composer', Composer)
         self.suggestions = self.query_one('#slash-menu', OptionList)
         self.transcript = self.query_one('#transcript', VerticalScroll)
-        self.output = self.query_one('#command-output', RichLog)
+        self.notice_row = self.query_one('#notice-row')
         self.pending_label = self.query_one('#pending', Static)
         self.status_label = self.query_one('#status', Static)
         self.chat_list = self.query_one('#chat-list', OptionList)
         self.sidebar_widget = self.query_one('#sidebar')
         self.details = self.query_one('#chat-details', Static)
-        self.output.display = False
+        self.notice_row.display = False
         self.pending_label.display = False
         self.suggestions.display = False
         self.begin_capture_print(self)
@@ -328,9 +359,10 @@ class WosTerminal(App):
                      'speaking': 'Speaking…'}.get(state['phase'], state['phase'])
             if self.busy and state['phase'] == 'idle':
                 phase = 'Working…'
-            self.status_label.update(f"{phase}  ·  {state['character']}  ·  {provider} / {state['model']}  ·  Voice {voice_text}")
+            self.status_label.update(f"{state['character']}  ·  {phase}  ·  Voice {voice_text}")
+            self.query_one('#heading-subtitle', Static).update(state['chat_title'])
             self.details.update(f"{state['chat_title']}\n\n{state['character']}\n{provider}\n{state['model']}")
-            self.query_one('#input-label', Static).update('MESSAGE ' + state['character'].upper())
+            self.composer.placeholder = f"Message {state['character']}…   / commands"
             if state['chat_version'] != self.revision or changed:
                 self.revision = state['chat_version']
                 history = self.backend.get_history()
@@ -386,8 +418,7 @@ class WosTerminal(App):
             nodes.clear()
         if not messages:
             await self.transcript.mount(Static(
-                f'WOS\n\nA little space to think.\n\nTalk with {character}, or type / to explore commands.\n'
-                'Ctrl+P commands    Ctrl+O chats    F2 models', id='welcome', markup=False))
+                f'A little space to think.\n\nTalk with {character}.', id='welcome', markup=False))
         else:
             buttons = list(self.transcript.query('#load-older'))
             if min(incoming) == 0:
@@ -459,8 +490,30 @@ class WosTerminal(App):
         name = self.namespace['session'].character_name + ':'
         if not text or text.startswith((name, 'You (overlay):')):
             return
-        self.output.display = True
-        self.output.write(Text(text))
+        lines = text.splitlines()
+        self.output_lines.extend(lines)
+        if isinstance(self.screen, DetailsScreen):
+            self.screen.query_one(RichLog).write(Text(text))
+        summary = next((line.strip() for line in lines if line.strip()), '')
+        summary = summary.removeprefix('Auralis:').strip()
+        self.query_one('#notice', Static).update(summary[:160])
+        self.notice_row.display = True
+        if self._notice_timer is not None:
+            self._notice_timer.stop()
+        self._notice_timer = self.set_timer(8, self.hide_notice)
+
+    def hide_notice(self):
+        self.notice_row.display = False
+
+    @on(Button.Pressed, '#details-toggle')
+    def open_details(self):
+        self.action_details()
+
+    def action_details(self):
+        if isinstance(self.screen, DetailsScreen):
+            self.screen.action_cancel()
+        elif len(self.screen_stack) == 1:
+            self.push_screen(DetailsScreen(self.output_lines), lambda _: self.composer.focus())
 
     def on_print(self, event: events.Print):
         self.write_output(event.text)
@@ -597,20 +650,24 @@ class WosTerminal(App):
         self.resize_layout()
 
     def action_theme(self):
-        self.theme = 'wos-light' if self.theme == 'wos-dark' else 'wos-dark'
+        self.theme = 'auralis-light' if self.theme == 'auralis-dark' else 'auralis-dark'
 
     def action_history_up(self):
-        if len(self.screen_stack) == 1:
+        if isinstance(self.screen, DetailsScreen):
+            self.screen.query_one(RichLog).scroll_page_up(animate=False)
+        elif len(self.screen_stack) == 1:
             self.transcript.scroll_page_up(animate=False)
 
     def action_history_down(self):
-        if len(self.screen_stack) == 1:
+        if isinstance(self.screen, DetailsScreen):
+            self.screen.query_one(RichLog).scroll_page_down(animate=False)
+        elif len(self.screen_stack) == 1:
             self.transcript.scroll_page_down(animate=False)
 
     def action_dismiss_output(self):
-        self.output.clear()
-        self.output.display = False
-        self.composer.focus()
+        self.hide_notice()
+        if len(self.screen_stack) == 1:
+            self.composer.focus()
 
     def action_quit(self):
         self._terminal_closing = True

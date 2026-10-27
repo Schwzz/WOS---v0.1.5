@@ -1,4 +1,4 @@
-# WOS Companion
+# Auralis Companion
 
 The Companion, full-screen terminal, and chat views use the same session, character,
 models, memories, chat files, and voice player. See [TERMINAL.md](TERMINAL.md) for
@@ -11,7 +11,7 @@ pip install -r requirements.txt
 run.bat
 ```
 
-`run.bat --browser` opens the browser version. Without pywebview, WOS falls back
+`run.bat --browser` opens the browser version. Without pywebview, Auralis falls back
 to your browser automatically. `python start.py` still runs the terminal alone.
 
 ## Companion and chat
@@ -23,9 +23,9 @@ to your browser automatically. `python start.py` still runs the terminal alone.
   earlier-message loading, and preserving your reading position when new replies arrive.
 - Enter sends; Shift+Enter adds a line. Drafts survive a temporary disconnect and
   are kept separately for each chat while the window stays open.
-- The pin keeps WOS above other windows. Its tooltip explains the current action.
+- The pin keeps Auralis above other windows. Its tooltip explains the current action.
   A failed/timed-out window action shows an error without blocking backend recovery.
-  Minimize leaves WOS running.
+  Minimize leaves Auralis running.
 - Appearance offers **Crystal core**, Orb, Orbit rings, and Waveform, with separate light/dark theme,
   accent, avatar size, glow, and motion controls. Settings save automatically.
   System reduced-motion settings disable geometric motion.
@@ -56,7 +56,7 @@ not introduce streaming TTS or delay text until audio is ready.
 ## Models
 
 Configure only the provider keys you want in `.env` (copy `.env.txt` first).
-Restart WOS after changing keys. Keys are read in Python, never entered in chat.
+Restart Auralis after changing keys. Keys are read in Python, never entered in chat.
 
 | Provider | Terminal ID | Environment variable |
 |---|---|---|

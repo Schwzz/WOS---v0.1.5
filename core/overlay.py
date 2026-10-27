@@ -1,6 +1,6 @@
-"""Bridge between the running WOS terminal and the WOS-Overlay desktop UI.
+"""Bridge between the running Auralis terminal and the WOS-Overlay desktop UI.
 
-The overlay is a second window onto the SAME WOS process: this module lets it
+The overlay is a second window onto the SAME Auralis process: this module lets it
 send messages to the one existing Session (so provider, character, memory
 and chat files are shared) and read what the avatar should be doing. It
 never starts a Session, a speaker or an input loop of its own.
@@ -14,7 +14,7 @@ never starts a Session, a speaker or an input loop of its own.
                     token that only the local overlay process can read from
                     data/overlay_endpoint.json.
 
-Nothing here may break WOS: the server runs on daemon threads and start.py
+Nothing here may break Auralis: the server runs on daemon threads and start.py
 treats a failure to start it as a warning.
 """
 import atexit
@@ -89,7 +89,7 @@ def save_voice_setting(enabled):
 
 
 class OverlayBackend:
-    """Shared access to the one WOS session and speaker."""
+    """Shared access to the one Auralis session and speaker."""
 
     def __init__(self, get_session, speaker, notify=None):
         self._get_session = get_session
@@ -161,13 +161,13 @@ class OverlayBackend:
 
             if text.startswith("/"):
                 raise BackendError(
-                    "Commands such as /model run in the WOS terminal."
+                    "Commands such as /model run in the Auralis terminal."
                 )
             if request_id is not None and (not isinstance(request_id, str) or not 1 <= len(request_id) <= 80):
                 raise BackendError("Invalid message identifier.")
 
             if not self._command_lock.acquire(timeout=BUSY_TIMEOUT_SECONDS):
-                raise BackendBusy("WOS is busy with a terminal command.")
+                raise BackendBusy("Auralis is busy with a terminal command.")
         else:
             self._command_lock.acquire()
 
@@ -197,12 +197,12 @@ class OverlayBackend:
                         raise
 
                     raise BackendError(
-                        "WOS could not process that message.", 500
+                        "Auralis could not process that message.", 500
                     ) from None
 
                 if from_ui:
                     if not isinstance(reply, str) or not reply.strip():
-                        self._say("WOS: The model did not return a response.")
+                        self._say("Auralis: The model did not return a response.")
                         raise BackendError(
                             getattr(session, "last_provider_error", None) or "The model did not return a response.", 502
                         )
@@ -396,7 +396,7 @@ class OverlayBackend:
         except ValueError as error:
             raise BackendError(str(error)) from None
         if not self._command_lock.acquire(timeout=BUSY_TIMEOUT_SECONDS):
-            raise BackendBusy("WOS is busy. Change providers when the reply is finished.")
+            raise BackendBusy("Auralis is busy. Change providers when the reply is finished.")
         try:
             session = self._get_session()
             if (expected_provider is not None and expected_provider != session.provider) or (
@@ -419,7 +419,7 @@ class OverlayBackend:
         except ValueError as error:
             raise BackendError(str(error)) from None
         if not self._command_lock.acquire(timeout=BUSY_TIMEOUT_SECONDS):
-            raise BackendBusy("WOS is busy. Try changing the model when the reply is finished.")
+            raise BackendBusy("Auralis is busy. Try changing the model when the reply is finished.")
         try:
             session = self._get_session()
             if provider is not None and provider != session.provider:
@@ -521,7 +521,7 @@ class OverlayServer:
         try:
             current = json.loads(self.endpoint_path.read_text("utf-8"))
 
-            # Only remove our own file, never a newer WOS process's.
+            # Only remove our own file, never a newer Auralis process's.
             if current.get("token") == self.token:
                 self.endpoint_path.unlink()
         except (OSError, ValueError, AttributeError):

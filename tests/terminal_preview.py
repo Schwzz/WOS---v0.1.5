@@ -28,22 +28,32 @@ async def main():
         try:
             async with app.run_test(size=(110, 36)) as pilot:
                 await pilot.pause(0.3)
-                (target / 'terminal-home.svg').write_text(app.export_screenshot(title='WOS · terminal'), encoding='utf-8')
+                (target / 'terminal-home.svg').write_text(app.export_screenshot(title='Auralis · terminal'), encoding='utf-8')
                 await pilot.press('/')
                 await pilot.pause()
-                (target / 'terminal-commands.svg').write_text(app.export_screenshot(title='WOS · slash commands'), encoding='utf-8')
+                (target / 'terminal-commands.svg').write_text(app.export_screenshot(title='Auralis · slash commands'), encoding='utf-8')
                 app.composer.load_text('')
-                session._record_exchange('Let’s continue our WOS work.',
+                session._record_exchange('Let’s continue our Auralis work.',
                     'Ready, Captain. We can start with a small fix and work from there.\n\n'
                     'Use **F2** to choose a model, or type `/` to explore the commands.')
                 backend.hold_command()
                 backend.release_command()
                 await app.refresh_session()
                 await pilot.pause(0.3)
-                (target / 'terminal-chat.svg').write_text(app.export_screenshot(title='WOS · conversation'), encoding='utf-8')
+                (target / 'terminal-chat.svg').write_text(app.export_screenshot(title='Auralis · conversation'), encoding='utf-8')
+                app.write_output('Auralis: Model changed to gemini-example.\nThis applies to the current chat only.')
+                await pilot.pause()
+                (target / 'terminal-notice.svg').write_text(app.export_screenshot(title='Auralis · brief notice'), encoding='utf-8')
+                await pilot.press('f8')
+                await pilot.pause()
+                (target / 'terminal-details.svg').write_text(app.export_screenshot(title='Auralis · activity details'), encoding='utf-8')
+                await pilot.press('escape', 'ctrl+l', 'ctrl+t')
+                await pilot.pause()
+                (target / 'terminal-light.svg').write_text(app.export_screenshot(title='Auralis · light theme'), encoding='utf-8')
+                await pilot.press('ctrl+t')
                 app.push_screen(ChoiceScreen('Available Models', ['gemini-example (current)', 'another-chat-model', 'Other · enter an exact model name']))
                 await pilot.pause()
-                (target / 'terminal-picker.svg').write_text(app.export_screenshot(title='WOS · model picker'), encoding='utf-8')
+                (target / 'terminal-picker.svg').write_text(app.export_screenshot(title='Auralis · model picker'), encoding='utf-8')
         finally:
             speaker.shutdown()
 

@@ -17,7 +17,7 @@ TUI_REQUESTED = "--plain" not in sys.argv and (
 try:
     load_settings()
 except (ValueError, OSError) as error:
-    print(f"WOS: Could not start: {error}")
+    print(f"Auralis: Could not start: {error}")
     raise SystemExit(1)
 
 MISSING_PACKAGE_NAMES = {
@@ -39,7 +39,7 @@ except ImportError as error:
         raise
 
     print(
-        f"WOS: Could not start: missing package '{package}'. "
+        f"Auralis: Could not start: missing package '{package}'. "
         f"Install it with: pip install {package}"
     )
     raise SystemExit(1)
@@ -199,7 +199,7 @@ def get_character_name_color():
 
 
 def color_for_line(line):
-    """Choose colors for WOS output."""
+    """Choose colors for Auralis output."""
     stripped = line.strip()
     lowered = stripped.lower()
 
@@ -230,10 +230,7 @@ def color_for_line(line):
     if stripped.startswith(f"{character_name}:"):
         return "CHARACTER"
 
-    if stripped.startswith("WLLM:"):
-        return YELLOW
-
-    if stripped.startswith("WOS:"):
+    if stripped.startswith("Auralis:"):
         return (
             RED
             if any(phrase in lowered for phrase in error_phrases)
@@ -244,7 +241,7 @@ def color_for_line(line):
         return RED
 
     if (
-        stripped == "WOS"
+        stripped == "Auralis"
         or stripped.startswith("===")
         or stripped.startswith("---")
         or stripped in (
@@ -253,11 +250,11 @@ def color_for_line(line):
             "Providers",
             "Available Models",
             "Ollama Unavailable",
-            "WOS commands:",
+            "Auralis commands:",
             "Memory phrases:",
-            "WOS Status",
-            "WOS Context",
-            "WOS Default Settings",
+            "Auralis Status",
+            "Auralis Context",
+            "Auralis Default Settings",
             "Available Characters",
         )
     ):
@@ -284,7 +281,7 @@ def color_for_line(line):
 
 
 def print(*values, sep=" ", end="\n", file=None, flush=False):
-    """Color WOS output while preserving normal print behavior."""
+    """Color Auralis output while preserving normal print behavior."""
     destination = file if file is not None else sys.stdout
     text = sep.join(str(value) for value in values)
 
@@ -398,7 +395,7 @@ def show_command_help(arguments):
 
     if lines is None:
         arguments = arguments.strip()
-        print(f"WOS: No help is available for '{arguments}'.")
+        print(f"Auralis: No help is available for '{arguments}'.")
 
         suggestion = suggest_topic(arguments.split()[0]) if arguments else None
 
@@ -413,20 +410,20 @@ def show_command_help(arguments):
 
 
 # ------------------------------
-# Initialize WOS
+# Initialize Auralis
 # ------------------------------
 
 try:
     session = Session()
 except (ValueError, FileNotFoundError, KeyError) as error:
-    print(f"WOS: Could not start: {error}")
+    print(f"Auralis: Could not start: {error}")
     raise SystemExit(1)
 
 
 def show_header():
     print()
     print("==============================")
-    print("             WOS")
+    print("             Auralis")
     print("==============================")
     print(f"Character: {session.character_name}")
     print(f"Provider:  {session.provider}")
@@ -469,7 +466,7 @@ def show_chats():
 
 def show_character():
     print(
-        f"WOS: Active character: "
+        f"Auralis: Active character: "
         f"{session.character_name} ({session.character_id})"
     )
 
@@ -523,15 +520,15 @@ def manage_character(arguments):
                 return
 
         elif " " in remainder:
-            print("WOS: Usage: /character switch [character_id]")
+            print("Auralis: Usage: /character switch [character_id]")
             print("Use /character list to see available characters.")
             return
 
         result = session.switch_character(remainder)
-        print(f"WOS: {result}")
+        print(f"Auralis: {result}")
         return
 
-    print("WOS: Unknown character command.")
+    print("Auralis: Unknown character command.")
     print("Use /character, /character list, or /character switch [id].")
 
 
@@ -541,7 +538,7 @@ def choose_character():
     characters = list_characters()
 
     if not characters:
-        print("WOS: No valid characters found.")
+        print("Auralis: No valid characters found.")
         return None
 
     labels = []
@@ -554,7 +551,7 @@ def choose_character():
         labels,
         title="Available Characters",
         prompt=(
-            "WOS: Number of the character to switch to "
+            "Auralis: Number of the character to switch to "
             "(Enter or 0 to cancel): "
         ),
         reader=input,
@@ -562,7 +559,7 @@ def choose_character():
     )
 
     if index is None:
-        print("WOS: Character was not changed.")
+        print("Auralis: Character was not changed.")
         return None
 
     return characters[index]["id"]
@@ -585,7 +582,7 @@ CHAT_SUBCOMMANDS = tuple(action for _, action in CHAT_ACTIONS)
 
 def choose_chat(
     prompt,
-    cancelled_message="WOS: Cancelled. Nothing was changed.",
+    cancelled_message="Auralis: Cancelled. Nothing was changed.",
 ):
     """Let the user pick a saved chat from a numbered list.
 
@@ -595,7 +592,7 @@ def choose_chat(
     chats = load_index()
 
     if not chats:
-        print("WOS: There are no saved chats.")
+        print("Auralis: There are no saved chats.")
         return None
 
     index = select_option(
@@ -616,14 +613,14 @@ def choose_chat(
 
 
 def report_chat_not_found(target_id, command):
-    print(f"WOS: Chat '{target_id}' was not found.")
+    print(f"Auralis: Chat '{target_id}' was not found.")
     print("Use /chat list to see your saved chats.")
     print(f"To choose from a list instead, type /chat {command} on its own.")
 
 
 def switch_to_chat(target_id):
     if session.switch_chat(target_id):
-        print(f"WOS: Switched to {session.session_id}.")
+        print(f"Auralis: Switched to {session.session_id}.")
         print(f"Character: {session.character_name}")
         print(f"Provider: {session.provider}")
         print(f"Model: {session.model}")
@@ -637,11 +634,11 @@ def switch_chat_command(arguments):
     if not target_id:
         target_id = choose_chat(
             prompt=(
-                "WOS: Number of the chat to switch to "
+                "Auralis: Number of the chat to switch to "
                 "(Enter or 0 to cancel): "
             ),
             cancelled_message=(
-                f"WOS: Switch cancelled. "
+                f"Auralis: Switch cancelled. "
                 f"You are still in {session.session_id}."
             ),
         )
@@ -659,10 +656,10 @@ def rename_chat(arguments):
     if not arguments:
         target_id = choose_chat(
             prompt=(
-                "WOS: Number of the chat to rename "
+                "Auralis: Number of the chat to rename "
                 "(Enter or 0 to cancel): "
             ),
-            cancelled_message="WOS: Rename cancelled.",
+            cancelled_message="Auralis: Rename cancelled.",
         )
 
         if target_id is None:
@@ -683,11 +680,11 @@ def rename_chat(arguments):
     if not new_name:
         current_title = chat_data.get("title", "Untitled")
         answer = ask(
-            f"WOS: New title for '{current_title}' (Enter to cancel): "
+            f"Auralis: New title for '{current_title}' (Enter to cancel): "
         )
 
         if answer is None or not answer.strip():
-            print("WOS: Rename cancelled.")
+            print("Auralis: Rename cancelled.")
             return
 
         new_name = answer.strip()
@@ -697,13 +694,13 @@ def rename_chat(arguments):
     try:
         update_chat(chat_data)
     except (OSError, ValueError) as error:
-        print(f"WOS: Could not rename chat: {error}")
+        print(f"Auralis: Could not rename chat: {error}")
         return
 
     if target_id == session.session_id:
         session.chat = chat_data
 
-    print(f"WOS: Renamed {target_id} to '{new_name}'.")
+    print(f"Auralis: Renamed {target_id} to '{new_name}'.")
 
 
 def delete_chat_command(arguments):
@@ -712,17 +709,17 @@ def delete_chat_command(arguments):
     if not target_id:
         target_id = choose_chat(
             prompt=(
-                "WOS: Number of the chat to delete "
+                "Auralis: Number of the chat to delete "
                 "(Enter or 0 to cancel): "
             ),
-            cancelled_message="WOS: Deletion cancelled.",
+            cancelled_message="Auralis: Deletion cancelled.",
         )
 
         if target_id is None:
             return
 
     elif " " in target_id:
-        print("WOS: Usage: /chat delete [session_id]")
+        print("Auralis: Usage: /chat delete [session_id]")
         return
 
     remove_chat(target_id)
@@ -738,9 +735,9 @@ def remove_chat(target_id):
     title = chat_data.get("title", "Untitled")
 
     if not ask_yes_no(
-        f"WOS: Delete '{title}' ({target_id}) permanently? (y/n): "
+        f"Auralis: Delete '{title}' ({target_id}) permanently? (y/n): "
     ):
-        print("WOS: Deletion cancelled.")
+        print("Auralis: Deletion cancelled.")
         return
 
     was_active = target_id == session.session_id
@@ -748,14 +745,14 @@ def remove_chat(target_id):
     try:
         deleted = delete_chat(target_id)
     except (OSError, ValueError) as error:
-        print(f"WOS: Could not delete chat: {error}")
+        print(f"Auralis: Could not delete chat: {error}")
         return
 
     if deleted is False:
-        print(f"WOS: Chat '{target_id}' could not be deleted.")
+        print(f"Auralis: Chat '{target_id}' could not be deleted.")
         return
 
-    print(f"WOS: Deleted {target_id}.")
+    print(f"Auralis: Deleted {target_id}.")
 
     if was_active:
         remaining_chats = load_index()
@@ -769,35 +766,35 @@ def remove_chat(target_id):
             else:
                 session.new_chat()
         except ChatLimitError as error:
-            print(f"WOS: {error}")
+            print(f"Auralis: {error}")
             return
 
-        print(f"WOS: Active session is now {session.session_id}.")
+        print(f"Auralis: Active session is now {session.session_id}.")
 
 
 def clear_chat():
     messages = session.chat.get("messages", [])
 
     if not messages:
-        print("WOS: This chat has no messages to clear.")
+        print("Auralis: This chat has no messages to clear.")
         return
 
     title = session.chat.get("title", "Untitled")
 
     if not ask_yes_no(
-        f"WOS: Clear all {len(messages)} message(s) in '{title}' "
+        f"Auralis: Clear all {len(messages)} message(s) in '{title}' "
         f"({session.session_id})? This cannot be undone. (y/n): "
     ):
-        print("WOS: Clear cancelled.")
+        print("Auralis: Clear cancelled.")
         return
 
     try:
         session.clear()
     except (OSError, ValueError) as error:
-        print(f"WOS: Could not clear the conversation: {error}")
+        print(f"Auralis: Could not clear the conversation: {error}")
         return
 
-    print("WOS: Conversation cleared.")
+    print("Auralis: Conversation cleared.")
 
 
 def manage_chat(arguments):
@@ -807,13 +804,13 @@ def manage_chat(arguments):
         index = select_option(
             [label for label, _ in CHAT_ACTIONS],
             title="Chat Actions",
-            prompt="WOS: What would you like to do? (Enter or 0 to cancel): ",
+            prompt="Auralis: What would you like to do? (Enter or 0 to cancel): ",
             reader=input,
             writer=print,
         )
 
         if index is None:
-            print("WOS: Cancelled. Nothing was changed.")
+            print("Auralis: Cancelled. Nothing was changed.")
             return
 
         action = CHAT_ACTIONS[index][1]
@@ -824,7 +821,7 @@ def manage_chat(arguments):
 
     if action in ("list", "clear") and remainder:
         print(
-            f"WOS: '/chat {action}' does not take any arguments. "
+            f"Auralis: '/chat {action}' does not take any arguments. "
             "Type /help chat for usage."
         )
     elif action == "list":
@@ -844,7 +841,7 @@ def manage_chat(arguments):
         hint = f" Did you mean /chat {matches[0]}?" if matches else ""
 
         print(
-            f"WOS: Unknown command '/chat {action}'.{hint} "
+            f"Auralis: Unknown command '/chat {action}'.{hint} "
             "Type /help chat to see the subcommands."
         )
 
@@ -853,7 +850,7 @@ def show_context():
     info = session.context_info()
 
     print()
-    print("WOS Context")
+    print("Auralis Context")
     print("-----------")
     print(f"Session:             {info['session_id']}")
     print(f"Saved messages:      {info['saved_messages']}")
@@ -866,7 +863,7 @@ def show_status():
     info = session.context_info()
 
     print()
-    print("WOS Status")
+    print("Auralis Status")
     print("----------")
     print(f"Character:      {session.character_name}")
     print(f"Provider:       {session.provider}")
@@ -899,7 +896,7 @@ def manage_memory(arguments):
 
     if action == "edit":
         if not separator or not remainder:
-            print("WOS: Usage: /memory edit <key> <new_value>")
+            print("Auralis: Usage: /memory edit <key> <new_value>")
             print("Use /memory to view saved memory keys.")
             return
 
@@ -924,14 +921,14 @@ def manage_memory(arguments):
             parts = remainder.split(maxsplit=1)
 
             if len(parts) != 2 or not parts[1].strip():
-                print("WOS: Usage: /memory edit <key> <new_value>")
+                print("Auralis: Usage: /memory edit <key> <new_value>")
                 print("Use /memory to view saved memory keys.")
                 return
 
             key, new_value = parts[0], parts[1].strip()
 
         result = edit_memory(session.memory, key, new_value)
-        print(f"WOS: {result}")
+        print(f"Auralis: {result}")
 
         if result == "Memory updated successfully.":
             refresh_memory_context()
@@ -940,20 +937,20 @@ def manage_memory(arguments):
 
     if action == "delete":
         if not separator or not remainder:
-            print("WOS: Usage: /memory delete <key>")
+            print("Auralis: Usage: /memory delete <key>")
             print("Use /memory to view saved memory keys.")
             return
 
         target = remainder
 
         if not ask_yes_no(
-            f"WOS: Delete memory '{target}' permanently? (y/n): "
+            f"Auralis: Delete memory '{target}' permanently? (y/n): "
         ):
-            print("WOS: Deletion cancelled.")
+            print("Auralis: Deletion cancelled.")
             return
 
         result = forget_memory(session.memory, f"forget that {target}")
-        print(f"WOS: {result}")
+        print(f"Auralis: {result}")
 
         failed = (
             result is None
@@ -968,27 +965,27 @@ def manage_memory(arguments):
 
     if action == "clear":
         if not ask_yes_no(
-            "WOS: Delete ALL saved memories permanently? (y/n): "
+            "Auralis: Delete ALL saved memories permanently? (y/n): "
         ):
-            print("WOS: Memory clearing cancelled.")
+            print("Auralis: Memory clearing cancelled.")
             return
 
         result = clear_memory(session.memory, confirmed=True)
-        print(f"WOS: {result}")
+        print(f"Auralis: {result}")
 
         if result == "All saved memories have been cleared.":
             refresh_memory_context()
 
         return
 
-    print("WOS: Unknown memory command.")
+    print("Auralis: Unknown memory command.")
     print("Use /memory, /memory edit, /memory delete, or /memory clear.")
 
 
 def ask_for_model(provider):
     """Ask which model to use with a provider. Returns None if cancelled."""
-    print(f"WOS: Provider '{provider}' needs a model.")
-    answer = ask(f"WOS: Model name for {provider} (Enter to cancel): ")
+    print(f"Auralis: Provider '{provider}' needs a model.")
+    answer = ask(f"Auralis: Model name for {provider} (Enter to cancel): ")
 
     if answer is None or not answer.strip():
         return None
@@ -1023,7 +1020,7 @@ def ask_when_ollama_unavailable(reason):
 
     Returns "retry", "manual", or None if the user cancelled.
     """
-    print(f"WOS: Could not get the list of installed models: {reason}")
+    print(f"Auralis: Could not get the list of installed models: {reason}")
     print(
         "Make sure Ollama is running (start the Ollama app, or run: "
         "ollama serve), then choose Try again."
@@ -1034,10 +1031,10 @@ def ask_when_ollama_unavailable(reason):
         [
             "Try again",
             "Type a model name myself "
-            "(WOS cannot check it while Ollama is unavailable)",
+            "(Auralis cannot check it while Ollama is unavailable)",
         ],
         title="Ollama Unavailable",
-        prompt="WOS: Number of your choice (Enter or 0 to cancel): ",
+        prompt="Auralis: Number of your choice (Enter or 0 to cancel): ",
         reader=input,
         writer=print,
     )
@@ -1067,7 +1064,7 @@ def check_ollama_model_choice(provider, model):
 
     if installed is None:
         print(
-            f"WOS: Could not check which models Ollama has installed "
+            f"Auralis: Could not check which models Ollama has installed "
             f"({unavailable}) so '{model}' was not verified."
         )
         return None
@@ -1076,12 +1073,12 @@ def check_ollama_model_choice(provider, model):
 
 
 def show_current_settings():
-    print(f"WOS: Current provider: {session.provider}")
+    print(f"Auralis: Current provider: {session.provider}")
     print(f"Current model: {session.model}")
 
 
 def print_chat_scope():
-    print(f"WOS: This applies to the current chat ({session.session_id}) only.")
+    print(f"Auralis: This applies to the current chat ({session.session_id}) only.")
     print(
         f"New chats use your defaults ({session.default_provider} / "
         f"{session.default_model}). Change those with /defaults."
@@ -1092,12 +1089,12 @@ def ask_model_name(provider, installed):
     """Ask the user to type a model name. Returns None if they cancel."""
     if provider != "ollama":
         print(
-            "WOS: Type the exact model name. WOS can check that it is "
+            "Auralis: Type the exact model name. Auralis can check that it is "
             "written correctly, but not that your provider offers it."
         )
 
     while True:
-        answer = ask("WOS: Model name (Enter to cancel): ")
+        answer = ask("Auralis: Model name (Enter to cancel): ")
 
         if answer is None or not answer.strip():
             return None
@@ -1105,14 +1102,14 @@ def ask_model_name(provider, installed):
         try:
             model = validate_model_name(answer)
         except ValueError as error:
-            print(f"WOS: {error}")
+            print(f"Auralis: {error}")
             continue
 
         if provider == "ollama" and installed is not None:
             problem = check_ollama_model(model, installed)
 
             if problem:
-                print(f"WOS: {problem}")
+                print(f"Auralis: {problem}")
                 continue
 
         return model
@@ -1131,7 +1128,7 @@ def choose_provider():
     index = select_option(
         labels,
         title="Providers",
-        prompt="WOS: Number of the provider to use (Enter or 0 to cancel): ",
+        prompt="Auralis: Number of the provider to use (Enter or 0 to cancel): ",
         reader=input,
         writer=print,
     )
@@ -1143,7 +1140,7 @@ def choose_model(provider):
     """Numbered menu of models for a provider. Returns the model or None.
 
     For Ollama these are the models actually installed. For other providers
-    they are model names WOS already knows about, plus an Other choice to
+    they are model names Auralis already knows about, plus an Other choice to
     type any name. Model names are never made up.
     """
     installed = None
@@ -1153,7 +1150,7 @@ def choose_model(provider):
     if provider != "ollama":
         cloud_listing = ModelCatalog().list(provider, session.known_models(provider), refresh=True)
         if cloud_listing["warning"]:
-            print(f"WOS: {cloud_listing['warning']}")
+            print(f"Auralis: {cloud_listing['warning']}")
 
     if provider == "ollama":
         while True:
@@ -1173,7 +1170,7 @@ def choose_model(provider):
                 break
 
         if installed is not None and not installed:
-            print("WOS: Ollama has no models installed yet.")
+            print("Auralis: Ollama has no models installed yet.")
             print("Install one first, for example: ollama pull <model>")
             return None
 
@@ -1193,15 +1190,15 @@ def choose_model(provider):
     allow_other = not (provider == "ollama" and installed is not None)
 
     if not models:
-        print("WOS: Type the name of the model to use. It cannot be checked until Ollama is running."
+        print("Auralis: Type the name of the model to use. It cannot be checked until Ollama is running."
               if provider == "ollama" else
-              "WOS: No models were discovered. Type an exact model name, or cancel.")
+              "Auralis: No models were discovered. Type an exact model name, or cancel.")
         return ask_model_name(provider, installed)
 
     if allow_other:
         labels.append(OTHER_LABEL)
 
-    print(f"WOS: Models for {provider}:")
+    print(f"Auralis: Models for {provider}:")
 
     if provider == "ollama" and installed is not None:
         print("These are installed on this computer.")
@@ -1210,16 +1207,16 @@ def choose_model(provider):
               if cloud_listing["source"] == "live" else "Using the cached provider model list.")
         print("Listing a model does not guarantee account quota or access.")
     else:
-        print("These are model names WOS already knows "
+        print("These are model names Auralis already knows "
               "(from your settings and chats).")
-        print("WOS cannot check them with your provider, so a typo only "
+        print("Auralis cannot check them with your provider, so a typo only "
               "shows up when you chat.")
         print("To use a different model, choose Other and type its exact name.")
 
     index = select_option(
         labels,
         title="Available Models",
-        prompt="WOS: Number of the model to use (Enter or 0 to cancel): ",
+        prompt="Auralis: Number of the model to use (Enter or 0 to cancel): ",
         reader=input,
         writer=print,
     )
@@ -1236,7 +1233,7 @@ def choose_model(provider):
 def apply_provider_change(provider, model, check=True):
     if provider == session.provider and model == session.model:
         print(
-            f"WOS: Already using {provider} with model {model}. "
+            f"Auralis: Already using {provider} with model {model}. "
             "Nothing was changed."
         )
         return
@@ -1245,12 +1242,12 @@ def apply_provider_change(provider, model, check=True):
         problem = check_ollama_model_choice(provider, model)
 
         if problem:
-            print(f"WOS: {problem}")
-            print("WOS: Provider was not changed.")
+            print(f"Auralis: {problem}")
+            print("Auralis: Provider was not changed.")
             return
 
     result = session.change_provider(provider, model)
-    print(f"WOS: {result}")
+    print(f"Auralis: {result}")
 
     if session.provider == provider and session.model == model.strip():
         print_chat_scope()
@@ -1258,19 +1255,19 @@ def apply_provider_change(provider, model, check=True):
 
 def apply_model_change(model, check=True):
     if model.strip() == session.model:
-        print(f"WOS: Already using model {session.model}. Nothing was changed.")
+        print(f"Auralis: Already using model {session.model}. Nothing was changed.")
         return
 
     if check:
         problem = check_ollama_model_choice(session.provider, model)
 
         if problem:
-            print(f"WOS: {problem}")
-            print("WOS: Model was not changed.")
+            print(f"Auralis: {problem}")
+            print("Auralis: Model was not changed.")
             return
 
     result = session.change_model(model)
-    print(f"WOS: {result}")
+    print(f"Auralis: {result}")
 
     if session.model == model.strip():
         print_chat_scope()
@@ -1283,13 +1280,13 @@ def manage_provider(arguments):
         provider = choose_provider()
 
         if provider is None:
-            print("WOS: Provider was not changed.")
+            print("Auralis: Provider was not changed.")
             return
 
         model = choose_model(provider)
 
         if model is None:
-            print("WOS: Provider was not changed.")
+            print("Auralis: Provider was not changed.")
             return
 
         apply_provider_change(provider, model, check=False)
@@ -1298,14 +1295,14 @@ def manage_provider(arguments):
     parts = arguments.split()
 
     if len(parts) > 2:
-        print("WOS: Usage: /provider [provider] [model]")
+        print("Auralis: Usage: /provider [provider] [model]")
         return
 
     provider = parts[0].lower()
     model = parts[1] if len(parts) == 2 else None
 
     if provider not in SUPPORTED_PROVIDERS:
-        print(f"WOS: {session.change_provider(provider)}")
+        print(f"Auralis: {session.change_provider(provider)}")
         return
 
     if model is None:
@@ -1320,14 +1317,14 @@ def manage_provider(arguments):
                 problem = check_ollama_model_choice(provider, model)
 
                 if problem:
-                    print(f"WOS: {problem}")
+                    print(f"Auralis: {problem}")
                     model = None
 
             if model is None:
                 model = choose_model(provider)
 
                 if model is None:
-                    print("WOS: Provider was not changed.")
+                    print("Auralis: Provider was not changed.")
                     return
 
                 apply_provider_change(provider, model, check=False)
@@ -1344,7 +1341,7 @@ def manage_model(arguments):
         model = choose_model(session.provider)
 
         if model is None:
-            print("WOS: Model was not changed.")
+            print("Auralis: Model was not changed.")
             return
 
         apply_model_change(model, check=False)
@@ -1363,7 +1360,7 @@ def manage_defaults(arguments):
     arguments = arguments.strip()
 
     if not arguments:
-        print("WOS Default Settings")
+        print("Auralis Default Settings")
         print("--------------------")
         print(f"Default provider:  {session.default_provider}")
         print(f"Default model:     {session.default_model}")
@@ -1390,7 +1387,7 @@ def manage_defaults(arguments):
             model = ask_for_model(provider)
 
             if model is None:
-                print("WOS: Default settings were not changed.")
+                print("Auralis: Default settings were not changed.")
                 return
 
         result = session.save_defaults(provider=provider, model=model)
@@ -1402,16 +1399,16 @@ def manage_defaults(arguments):
         result = session.save_defaults(character=values[0])
 
     else:
-        print("WOS: Usage: /defaults provider <provider> [model]")
+        print("Auralis: Usage: /defaults provider <provider> [model]")
         print("       /defaults model <model>")
         print("       /defaults character <id>")
         return
 
-    print(f"WOS: {result}")
+    print(f"Auralis: {result}")
 
     if result == "Default settings saved.":
         print(
-            "WOS: New chats will use these settings. "
+            "Auralis: New chats will use these settings. "
             "The current chat is unchanged."
         )
 
@@ -1423,18 +1420,18 @@ def start_new_chat():
         try:
             notes = session.new_chat()
         except ChatLimitError as error:
-            print(f"WOS: {error}")
+            print(f"Auralis: {error}")
 
             if not free_up_chat_slot():
-                print("WOS: No new chat was created.")
+                print("Auralis: No new chat was created.")
                 return
 
             continue
 
         for note in notes:
-            print(f"WOS: {note}")
+            print(f"Auralis: {note}")
 
-        print(f"WOS: Started {session.session_id}.")
+        print(f"Auralis: Started {session.session_id}.")
         return
 
 
@@ -1447,7 +1444,7 @@ def free_up_chat_slot():
         return False
 
     target_id = choose_chat(
-        prompt="WOS: Number of the chat to delete (Enter or 0 to cancel): ",
+        prompt="Auralis: Number of the chat to delete (Enter or 0 to cancel): ",
         cancelled_message=None,
     )
 
@@ -1460,9 +1457,9 @@ def free_up_chat_slot():
     title = target.get("title", "Untitled")
 
     if not ask_yes_no(
-        f"WOS: Delete '{title}' ({target_id}) permanently? (y/n): "
+        f"Auralis: Delete '{title}' ({target_id}) permanently? (y/n): "
     ):
-        print("WOS: Deletion cancelled.")
+        print("Auralis: Deletion cancelled.")
         return False
 
     was_active = target_id == session.session_id
@@ -1470,14 +1467,14 @@ def free_up_chat_slot():
     try:
         deleted = delete_chat(target_id)
     except (OSError, ValueError) as error:
-        print(f"WOS: Could not delete chat: {error}")
+        print(f"Auralis: Could not delete chat: {error}")
         return False
 
     if deleted is False:
-        print(f"WOS: Chat '{target_id}' could not be deleted.")
+        print(f"Auralis: Chat '{target_id}' could not be deleted.")
         return False
 
-    print(f"WOS: Deleted {target_id}.")
+    print(f"Auralis: Deleted {target_id}.")
 
     if was_active:
         # The deleted chat is gone, so move to another saved chat. If none
@@ -1511,7 +1508,7 @@ def choose_new_cloud_key_model():
         except (OSError, ValueError, AttributeError):
             selected_key = None
         if selected_key != fingerprint:
-            print(f"WOS: A new {PROVIDERS[session.provider]['label']} key is configured. Choose a model for this chat.")
+            print(f"Auralis: A new {PROVIDERS[session.provider]['label']} key is configured. Choose a model for this chat.")
             choice = choose_model(session.provider)
             if choice is not None:
                 apply_model_change(choice, check=False)
@@ -1544,7 +1541,7 @@ if "--overlay" in sys.argv:
         overlay_server.start()
     except (ValueError, OSError) as error:
         overlay_server = None
-        print(f"WOS: The desktop overlay could not start: {error}")
+        print(f"Auralis: The desktop overlay could not start: {error}")
 
 def run_loop():
     while True:
@@ -1556,12 +1553,12 @@ def run_loop():
         except KeyboardInterrupt:
             if tts_speaker.active:
                 overlay_backend.stop_speech()
-                print("\nWOS: Speech stopped.")
+                print("\nAuralis: Speech stopped.")
                 continue
-            print("\nWOS: Goodbye.")
+            print("\nAuralis: Goodbye.")
             break
         except EOFError:
-            print("\nWOS: Goodbye.")
+            print("\nAuralis: Goodbye.")
             break
 
         if not message:
@@ -1576,11 +1573,11 @@ def run_loop():
 
         if command == "/stop":
             overlay_backend.stop_speech()
-            print("WOS: Speech stopped.")
+            print("Auralis: Speech stopped.")
             continue
 
         if command in ("/exit", "/quit"):
-            print("WOS: Conversation saved.")
+            print("Auralis: Conversation saved.")
             break
 
         if command == "/help":
@@ -1592,7 +1589,7 @@ def run_loop():
             continue
 
         if command == "/restart":
-            print("WOS: Restarting...")
+            print("Auralis: Restarting...")
             return "restart"
 
         if command == "/new":
@@ -1668,7 +1665,7 @@ def run_loop():
             continue
 
         if command == "/forget":
-            print("WOS: Usage: /forget <memory>")
+            print("Auralis: Usage: /forget <memory>")
             print("Example: /forget that I am learning Python")
             continue
 
@@ -1676,7 +1673,7 @@ def run_loop():
             target = message[len("/forget "):].strip()
 
             if not target:
-                print("WOS: Usage: /forget <memory>")
+                print("Auralis: Usage: /forget <memory>")
                 continue
 
             if target.lower().startswith(("that ", "about ")):
@@ -1687,7 +1684,7 @@ def run_loop():
             reply = overlay_backend.send_message(forget_request, "terminal")
 
             if reply is None:
-                print("WOS: The memory operation did not return a response.")
+                print("Auralis: The memory operation did not return a response.")
             else:
                 print(f"{session.character_name}: {reply}")
                 overlay_backend.speak_terminal_reply(reply)
@@ -1723,7 +1720,7 @@ def run_loop():
         reply = overlay_backend.send_message(message, "terminal")
 
         if reply is None:
-            print("WOS: The model did not return a response.")
+            print("Auralis: The model did not return a response.")
             continue
 
         print(f"{session.character_name}: {reply}")
@@ -1772,7 +1769,7 @@ try:
             # Only the optional UI dependency gets a plain-terminal fallback.
             if not (error.name or "").startswith(("textual", "rich")):
                 raise
-            print("WOS: Terminal UI is unavailable. Install it with: pip install 'textual>=8.2.8,<9'")
+            print("Auralis: Terminal UI is unavailable. Install it with: pip install 'textual>=8.2.8,<9'")
             show_header()
         else:
             using_tui = True
@@ -1785,7 +1782,7 @@ try:
             overlay_backend.release_command()
         terminal_result = run_loop()
 except KeyboardInterrupt:
-    print("\nWOS: Interrupted. Goodbye.")
+    print("\nAuralis: Interrupted. Goodbye.")
 finally:
     tts_speaker.shutdown()
     # The TUI command worker owns its lock and releases it in its own finally.

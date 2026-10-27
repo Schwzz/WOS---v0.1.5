@@ -8,9 +8,9 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem Desktop overlay window: waits until WOS below is ready.
+rem Desktop overlay window: waits until Auralis below is ready.
 rem Extra arguments are passed to it, e.g.  run.bat --browser
-start "WOS Overlay UI" /min python overlay\main.py %*
+start "Auralis Overlay UI" /min python overlay\main.py %*
 
-rem The normal WOS terminal, with the overlay connection enabled.
+rem The normal Auralis terminal, with the overlay connection enabled.
 python start.py --overlay %*

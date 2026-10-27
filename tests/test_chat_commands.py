@@ -1,6 +1,6 @@
 """End-to-end tests for /chat and its compatibility aliases, plus /help.
 
-Each test starts WOS as a real subprocess in a throwaway copy of the project.
+Each test starts Auralis as a real subprocess in a throwaway copy of the project.
 Most feed commands through stdin (where the input simply ends, which is EOF).
 Tests that need a real Ctrl+C use run_scripted(), which raises
 KeyboardInterrupt at a chosen prompt.
@@ -114,7 +114,7 @@ class ChatMenuTests(ChatTestCase):
 
         self.assertNoCrash(result)
         self.assertIn("Cancelled. Nothing was changed.", result.stdout)
-        self.assertIn("WOS Status", result.stdout)
+        self.assertIn("Auralis Status", result.stdout)
 
     def test_subcommands_and_the_command_itself_ignore_case(self):
         result = self.wos.run(lines("/CHAT LIST", "/Chat List", "/exit"))
@@ -273,7 +273,7 @@ class ChatSwitchTests(ChatTestCase):
         # Read only the /status blocks; the startup header and the
         # "Switched to" message print the same fields.
         statuses = re.findall(
-            r"WOS Status\n-+\nCharacter:.*\nProvider:\s+(\w+)\n"
+            r"Auralis Status\n-+\nCharacter:.*\nProvider:\s+(\w+)\n"
             r"Model:\s+(\S+)",
             result.stdout,
         )
@@ -384,7 +384,7 @@ class ChatRenameTests(ChatTestCase):
 
                 self.assertNoCrash(result)
                 self.assertIn("Rename cancelled", result.stdout)
-                self.assertIn("WOS Status", result.stdout)
+                self.assertIn("Auralis Status", result.stdout)
                 self.assertEqual(self.title("session_001"), "Chat 1")
 
     def test_unknown_id_is_reported_and_nothing_changes(self):
@@ -467,7 +467,7 @@ class ChatDeleteTests(ChatTestCase):
                 result = self.wos.run_scripted(answers)
 
                 self.assertNoCrash(result)
-                self.assertIn("WOS Status", result.stdout)
+                self.assertIn("Auralis Status", result.stdout)
                 self.assertEqual(len(self.wos.chat_ids()), 3)
 
     def test_invalid_numbers_ask_again_and_delete_nothing(self):
@@ -590,7 +590,7 @@ class ChatClearTests(ChatTestCase):
 
         self.assertNoCrash(result)
         self.assertIn("Clear cancelled", result.stdout)
-        self.assertIn("WOS Status", result.stdout)
+        self.assertIn("Auralis Status", result.stdout)
         self.assertEqual(self.message_count("session_001"), 4)
 
     def test_an_empty_chat_is_not_cleared_and_nothing_is_asked(self):
@@ -711,7 +711,7 @@ class CharacterSwitchMenuTests(ChatTestCase):
 
         self.assertNoCrash(eof)
         self.assertNoCrash(ctrl_c)
-        self.assertIn("WOS Status", ctrl_c.stdout)
+        self.assertIn("Auralis Status", ctrl_c.stdout)
         self.assertEqual(
             self.wos.read_chat("session_001")["character_id"], "nexis"
         )
@@ -736,7 +736,7 @@ class HelpCommandTests(ChatTestCase):
         self.assertNoCrash(result)
 
         out = result.stdout.splitlines()
-        start = out.index("WOS commands:") + 1
+        start = out.index("Auralis commands:") + 1
         entries = []
 
         for line in out[start:]:
@@ -859,7 +859,7 @@ class RegressionTests(ChatTestCase):
         ))
 
         self.assertNoCrash(result)
-        for text in ("WOS Status", "Default provider:",
+        for text in ("Auralis Status", "Default provider:",
                      "Current provider: cloud",
                      "Current model: gemini-3.5-flash-lite",
                      "Active character: Nexis", "Available Characters"):

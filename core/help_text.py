@@ -2,7 +2,7 @@ import difflib
 import textwrap
 
 
-# Help for every WOS command, in one place. /help and /help <command> are
+# Help for every Auralis command, in one place. /help and /help <command> are
 # built from this table, so a command only needs to be described once.
 #
 # Each entry has:
@@ -44,13 +44,13 @@ HELP_TOPICS = {
         "summary": "Stop current and pending speech",
         "purpose": "Stops the current spoken reply and cancels pending speech without muting future replies.",
         "usage": ["/stop"], "subcommands": [], "examples": ["/stop"],
-        "notes": ["Ctrl+C at the main prompt also stops active speech. With no speech active it exits WOS."],
+        "notes": ["Ctrl+C at the main prompt also stops active speech. With no speech active it exits Auralis."],
     },
     "/character": {
         "summary": "Show or change the character",
         "purpose": (
             "Shows which character you are talking to, lists the characters "
-            "WOS can load, or changes the character used by the current "
+            "Auralis can load, or changes the character used by the current "
             "chat. If a file in the characters folder cannot be used, the "
             "list says which file and why. The character that new chats "
             "start with is set with /defaults character."
@@ -83,7 +83,7 @@ HELP_TOPICS = {
             "Everything to do with your saved chats: see them, switch "
             "between them, rename them, delete them, or clear the current "
             "one. Type /chat on its own to pick an action from a numbered "
-            "menu. When a chat is needed and you don't give its id, WOS "
+            "menu. When a chat is needed and you don't give its id, Auralis "
             "shows your chats as a numbered list."
         ),
         "usage": [
@@ -106,7 +106,7 @@ HELP_TOPICS = {
                 "rename",
                 "/chat rename [id] [new title]",
                 "Rename a saved chat. Without an id, choose from a list. "
-                "Without a title, WOS asks for one.",
+                "Without a title, Auralis asks for one.",
             ),
             (
                 "delete",
@@ -169,7 +169,7 @@ HELP_TOPICS = {
                 "provider",
                 "/defaults provider <provider> [model]",
                 "Change the default provider. A provider needs a model, "
-                "so WOS asks for one when it has none to suggest.",
+                "so Auralis asks for one when it has none to suggest.",
             ),
             ("model", "/defaults model <model>",
              "Change the default model"),
@@ -184,8 +184,8 @@ HELP_TOPICS = {
     },
     "/delete": _alias("/chat delete", ["/delete [id]"], ["/delete session_002"]),
     "/exit": {
-        "summary": "Close WOS",
-        "purpose": "Saves the conversation and closes WOS. /quit does the same.",
+        "summary": "Close Auralis",
+        "purpose": "Saves the conversation and closes Auralis. /quit does the same.",
         "usage": ["/exit"],
         "subcommands": [],
         "examples": ["/exit"],
@@ -193,7 +193,7 @@ HELP_TOPICS = {
     "/forget": {
         "summary": "Forget a saved memory",
         "purpose": (
-            "Asks WOS to forget something it remembered about you. You can "
+            "Asks Auralis to forget something it remembered about you. You can "
             "also say it in a normal sentence, such as \"Forget that ...\"."
         ),
         "usage": ["/forget <memory>"],
@@ -217,7 +217,7 @@ HELP_TOPICS = {
     "/memory": {
         "summary": "Show or manage saved memories",
         "purpose": (
-            "Shows what WOS has remembered about you, or lets you edit, "
+            "Shows what Auralis has remembered about you, or lets you edit, "
             "delete, or clear memories."
         ),
         "usage": [
@@ -235,7 +235,7 @@ HELP_TOPICS = {
         ],
         "examples": ["/memory", "/memory delete favorite_color"],
         "notes": [
-            "WOS also saves memories from sentences such as "
+            "Auralis also saves memories from sentences such as "
             "\"Remember that ...\", \"Keep in mind that ...\", and "
             "\"Don't forget that ...\".",
         ],
@@ -254,11 +254,11 @@ HELP_TOPICS = {
         "examples": ["/model", "/model llama3"],
         "notes": [
             "For Ollama, the list shows the models installed on this "
-            "computer, with their sizes when Ollama reports them, and WOS "
-            "only accepts one of those. If Ollama is not running, WOS "
+            "computer, with their sizes when Ollama reports them, and Auralis "
+            "only accepts one of those. If Ollama is not running, Auralis "
             "explains how to start it and lets you try again, type a name "
-            "yourself, or cancel. For cloud providers, WOS fetches model IDs using the corresponding configured key. If discovery fails, it uses a cached list or model names "
-            "WOS already knows (your chats, your defaults, and "
+            "yourself, or cancel. For cloud providers, Auralis fetches model IDs using the corresponding configured key. If discovery fails, it uses a cached list or model names "
+            "Auralis already knows (your chats, your defaults, and "
             "\"suggested_models\" in config.json) plus an Other choice to "
             "type any name. Listing a model does not guarantee account access or quota. Manual names are checked only to ensure that "
             "they are well formed.",
@@ -269,7 +269,7 @@ HELP_TOPICS = {
         "summary": "Start a new chat",
         "purpose": (
             "Starts a new chat with the defaults (see /help defaults). If "
-            "you already have the maximum number of saved chats, WOS shows "
+            "you already have the maximum number of saved chats, Auralis shows "
             "them so you can choose one to delete first. Nothing is "
             "deleted without your confirmation."
         ),
@@ -290,13 +290,13 @@ HELP_TOPICS = {
         "subcommands": [],
         "examples": ["/provider", "/provider ollama llama3", "/provider cloud"],
         "notes": [
-            "A provider needs a model. If you give only the provider, WOS "
+            "A provider needs a model. If you give only the provider, Auralis "
             "reuses a model that suits it when it can, and otherwise shows "
             "the model list. Nothing changes until you have chosen both.",
             "For Ollama, the list shows the models installed on this "
             "computer, with their sizes when available. If Ollama is not "
             "running, you can try again or cancel. Cloud providers fetch model lists, with a cached or saved fallback. It also "
-            "shows model names WOS already knows, plus an Other choice to "
+            "shows model names Auralis already knows, plus an Other choice to "
             "type any name.",
             _MENU_NOTE,
         ],
@@ -308,9 +308,9 @@ HELP_TOPICS = {
         ["/rename session_002 Python practice"],
     ),
     "/restart": {
-        "summary": "Restart WOS",
+        "summary": "Restart Auralis",
         "purpose": (
-            "Closes and reopens WOS, which reloads its configuration "
+            "Closes and reopens Auralis, which reloads its configuration "
             "files. Your chats are saved."
         ),
         "usage": ["/restart"],
@@ -318,7 +318,7 @@ HELP_TOPICS = {
         "examples": ["/restart"],
     },
     "/status": {
-        "summary": "Show current WOS status",
+        "summary": "Show current Auralis status",
         "purpose": (
             "Shows the character, provider, model, and session, plus how "
             "many chats and memories are saved."
@@ -375,7 +375,7 @@ def overview_lines():
     names = command_names()
     width = max(len(name) for name in names) + 2
 
-    lines = ["", "WOS commands:"]
+    lines = ["", "Auralis commands:"]
 
     for name in names:
         lines.append(f"{name:<{width}}{HELP_TOPICS[name]['summary']}")

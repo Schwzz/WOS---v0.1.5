@@ -148,7 +148,7 @@ class WosProject:
     def __init__(self, stub_files=None, max_chats=5):
         self._tmp = tempfile.TemporaryDirectory()
         root = Path(self._tmp.name)
-        self.project = root / "WOS copy"  # a space, like a real Windows path
+        self.project = root / "Auralis copy"  # a space, like a real Windows path
         self.stubs = root / "stubs"
         self.stubs.mkdir()
 
@@ -210,7 +210,7 @@ class WosProject:
         return result
 
     def run_scripted(self, answers):
-        """Run WOS with the given list of answers, one per prompt."""
+        """Run Auralis with the given list of answers, one per prompt."""
         (self.project / "_scripted_runner.py").write_text(
             SCRIPTED_RUNNER, encoding="utf-8"
         )
@@ -529,7 +529,7 @@ class MaxChatsTests(IntegrationTestCase):
 
         self.assertNoCrash(result)
         self.assertIn("No new chat was created", result.stdout)
-        self.assertIn("WOS Status", result.stdout)  # WOS kept running
+        self.assertIn("Auralis Status", result.stdout)  # Auralis kept running
         self.assertEqual(self.wos.chat_ids(), ["session_001", "session_002"])
 
     def test_eof_at_the_selection_prompt_deletes_nothing(self):
@@ -550,7 +550,7 @@ class MaxChatsTests(IntegrationTestCase):
 
         self.assertNoCrash(result)
         self.assertIn("Deleted session_002", result.stdout)
-        # WOS numbers chats as "highest existing + 1", so the freed number
+        # Auralis numbers chats as "highest existing + 1", so the freed number
         # is reused. This was already the behavior before the limit change.
         self.assertIn("Started session_002", result.stdout)
         self.assertEqual(self.wos.chat_ids(), ["session_001", "session_002"])

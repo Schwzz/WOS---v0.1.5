@@ -275,14 +275,14 @@ function frame() {
   assert.strictEqual(els['line-c'].textContent, 'hi <b>there</b>');
 
   // 9. a rejected message restores the text and shows the error
-  backend.messageError = 'WOS is busy with a terminal command.';
+  backend.messageError = 'Auralis is busy with a terminal command.';
   els['chat-input'].value = 'again';
   await els['chat-form'].listeners.submit({ preventDefault() {} });
   await flush();
   assert.strictEqual(els['chat-input'].value, 'again');
   const err = els['chat-log'].children[els['chat-log'].children.length - 1];
   assert(err.className.includes('error'));
-  assert.strictEqual(err.children[1].textContent, 'WOS is busy with a terminal command.');
+  assert.strictEqual(err.children[1].textContent, 'Auralis is busy with a terminal command.');
 
   // 10. empty messages are ignored
   const before = calls.posts.length;

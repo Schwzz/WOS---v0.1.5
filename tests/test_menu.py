@@ -132,7 +132,7 @@ class DisplayTests(MenuTestCase):
 
         self.assertEqual(
             reader.prompts[0],
-            "WOS: Enter a number (1-3, Enter or 0 to cancel): ",
+            "Auralis: Enter a number (1-3, Enter or 0 to cancel): ",
         )
 
     def test_prompt_for_a_single_option_does_not_show_a_range(self):
@@ -143,14 +143,14 @@ class DisplayTests(MenuTestCase):
     def test_prompt_without_cancel_does_not_mention_cancelling(self):
         _, reader, _ = self.choose(["a", "b"], "1", allow_cancel=False)
 
-        self.assertEqual(reader.prompts[0], "WOS: Enter a number (1-2): ")
+        self.assertEqual(reader.prompts[0], "Auralis: Enter a number (1-2): ")
 
     def test_custom_prompt_is_used(self):
         _, reader, _ = self.choose(
-            ["a", "b"], "1", prompt="WOS: Which chat? "
+            ["a", "b"], "1", prompt="Auralis: Which chat? "
         )
 
-        self.assertEqual(reader.prompts, ["WOS: Which chat? "])
+        self.assertEqual(reader.prompts, ["Auralis: Which chat? "])
 
 
 class InvalidInputTests(MenuTestCase):
@@ -167,10 +167,10 @@ class InvalidInputTests(MenuTestCase):
         self.assertEqual(result, 1)
         self.assertEqual(len(reader.prompts), len(bad_answers) + 1)
 
-        messages = [l for l in lines if l.startswith("WOS: Please enter")]
+        messages = [l for l in lines if l.startswith("Auralis: Please enter")]
         self.assertEqual(len(messages), len(bad_answers))
         self.assertTrue(
-            all(m == "WOS: Please enter a number from 1 to 3." for m in messages)
+            all(m == "Auralis: Please enter a number from 1 to 3." for m in messages)
         )
 
     def test_invalid_input_never_returns_a_choice(self):
@@ -182,7 +182,7 @@ class InvalidInputTests(MenuTestCase):
     def test_message_for_a_single_option(self):
         _, _, lines = self.choose(["only"], "2", "1")
 
-        self.assertIn("WOS: Please enter 1.", lines)
+        self.assertIn("Auralis: Please enter 1.", lines)
 
     def test_zero_is_not_a_choice_when_cancelling_is_not_allowed(self):
         result, reader, lines = self.choose(
@@ -192,7 +192,7 @@ class InvalidInputTests(MenuTestCase):
         self.assertEqual(result, 1)
         self.assertEqual(len(reader.prompts), 4)
         self.assertEqual(
-            lines.count("WOS: Please enter a number from 1 to 2."), 3
+            lines.count("Auralis: Please enter a number from 1 to 2."), 3
         )
 
 
@@ -226,7 +226,7 @@ class CancellationTests(MenuTestCase):
                 self.assertIsNone(result)
                 self.assertEqual(reader.prompts, [])
                 self.assertEqual(
-                    lines, ["WOS: There is nothing to choose from."]
+                    lines, ["Auralis: There is nothing to choose from."]
                 )
 
 

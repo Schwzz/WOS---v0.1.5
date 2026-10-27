@@ -1,7 +1,7 @@
 """WOS-Overlay desktop window.
 
 Opens the overlay UI as a small frameless, always-on-top window (pywebview)
-that talks to the running WOS terminal. It does not run WOS itself: start WOS
+that talks to the running Auralis terminal. It does not run Auralis itself: start Auralis
 with `python start.py --overlay` (run.bat does both).
 
 Usage:
@@ -21,7 +21,7 @@ import webbrowser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# Written by core/overlay.py when WOS starts with --overlay.
+# Written by core/overlay.py when Auralis starts with --overlay.
 ENDPOINT = ROOT / "data" / "overlay_endpoint.json"
 WIDTH, HEIGHT, EXPANDED_HEIGHT = 380, 480, 720
 WAIT_SECONDS = 90
@@ -109,7 +109,7 @@ def stop_backend_speech(*_):
 
 
 def read_endpoint():
-    """The port and token of the running WOS, or None."""
+    """The port and token of the running Auralis, or None."""
     try:
         data = json.loads(ENDPOINT.read_text("utf-8"))
     except (OSError, ValueError):
@@ -127,7 +127,7 @@ def read_endpoint():
 
 
 def is_running(port):
-    """True if a WOS overlay server answers on this port."""
+    """True if a Auralis overlay server answers on this port."""
     try:
         url = f"http://127.0.0.1:{port}/api/ping"
 
@@ -138,7 +138,7 @@ def is_running(port):
 
 
 def wait_for_backend(seconds=WAIT_SECONDS):
-    """Wait for the WOS terminal to publish a live endpoint."""
+    """Wait for the Auralis terminal to publish a live endpoint."""
     deadline = time.monotonic() + seconds
     announced = False
 
@@ -149,7 +149,7 @@ def wait_for_backend(seconds=WAIT_SECONDS):
             return endpoint
 
         if not announced:
-            print("Waiting for the WOS terminal (start.py --overlay)...")
+            print("Waiting for the Auralis terminal (start.py --overlay)...")
             announced = True
 
         time.sleep(0.5)
@@ -169,7 +169,7 @@ class Api:
             _window.minimize()
 
     def get_endpoint(self):
-        """Fresh token after a WOS /restart (the port stays the same)."""
+        """Fresh token after a Auralis /restart (the port stays the same)."""
         endpoint = read_endpoint()
         return {"token": endpoint["token"], "port": endpoint["port"]} if endpoint else None
 
@@ -231,7 +231,7 @@ def main(argv):
     endpoint = wait_for_backend()
 
     if endpoint is None:
-        print("The WOS terminal did not start in time. Run run.bat again.")
+        print("The Auralis terminal did not start in time. Run run.bat again.")
         return 1
 
     url = f"http://127.0.0.1:{endpoint['port']}/#{endpoint['token']}"
@@ -265,7 +265,7 @@ def main(argv):
     initial = clamp_geometry(initial, _screens)
 
     _window = webview.create_window(
-        "WOS Companion",
+        "Auralis Companion",
         url,
         js_api=Api(),
         **initial,

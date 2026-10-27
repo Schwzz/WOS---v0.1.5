@@ -71,7 +71,7 @@ def load_index():
             index = json.load(file)
 
         if not isinstance(index, list):
-            print("WOS: Chat index must contain a JSON list.")
+            print("Auralis: Chat index must contain a JSON list.")
             return []
 
         return [
@@ -85,7 +85,7 @@ def load_index():
         return []
 
     except (json.JSONDecodeError, OSError) as error:
-        print(f"WOS: Could not load chat index: {error}")
+        print(f"Auralis: Could not load chat index: {error}")
         return []
 
 
@@ -164,7 +164,7 @@ def load_chat(session_id):
         return None
 
     except (json.JSONDecodeError, OSError) as error:
-        print(f"WOS: Could not load chat '{session_id}': {error}")
+        print(f"Auralis: Could not load chat '{session_id}': {error}")
         return None
 
 
@@ -236,7 +236,7 @@ def get_active_session():
             try:
                 set_active_session(session_id)
             except OSError as error:
-                print(f"WOS: Could not update active session: {error}")
+                print(f"Auralis: Could not update active session: {error}")
 
             return session_id
 
@@ -363,7 +363,7 @@ def delete_chat(session_id):
     try:
         active_session_id = get_active_session()
     except OSError as error:
-        print(f"WOS: Could not check active session: {error}")
+        print(f"Auralis: Could not check active session: {error}")
         active_session_id = None
 
     if active_session_id == session_id:
@@ -373,7 +373,7 @@ def delete_chat(session_id):
             try:
                 ACTIVE_SESSION_FILE.unlink(missing_ok=True)
             except OSError as error:
-                print(f"WOS: Could not clear active session: {error}")
+                print(f"Auralis: Could not clear active session: {error}")
 
     return True
 
@@ -397,7 +397,7 @@ def _load_old_conversation():
         ]
 
     except (json.JSONDecodeError, OSError) as error:
-        print(f"WOS: Could not load previous conversation: {error}")
+        print(f"Auralis: Could not load previous conversation: {error}")
         return []
 
 

@@ -158,7 +158,7 @@ const server = http.createServer(async (req, res) => {
     await page.goto(`http://127.0.0.1:${server.address().port}/#test-token`);
     await page.waitForFunction(() => document.body.classList.contains('linked'));
     await page.waitForFunction(() => document.querySelectorAll('.msg').length === 80);
-    assert.equal(await page.locator('#hud-title').innerText(), 'WOS COMPANION');
+    assert.equal(await page.locator('#hud-title').innerText(), 'Auralis COMPANION');
     assert.equal(await page.locator('#character-name').innerText(), 'Nexis');
     const shots = process.env.WOS_SCREENSHOTS;
     if (shots) {
@@ -253,7 +253,7 @@ const server = http.createServer(async (req, res) => {
     state.session_id = 'session_002';
     state.chat_version = 0;
     messages = [
-      { role: 'user', content: 'Let’s work on WOS.' },
+      { role: 'user', content: 'Let’s work on Auralis.' },
       {
         role: 'assistant',
         content:

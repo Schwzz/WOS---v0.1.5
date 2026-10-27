@@ -104,7 +104,7 @@ class HelpTableTests(unittest.TestCase):
 class OverviewTests(unittest.TestCase):
     def listed_commands(self):
         lines = help_text.overview_lines()
-        start = lines.index("WOS commands:") + 1
+        start = lines.index("Auralis commands:") + 1
         commands = []
 
         for line in lines[start:]:
@@ -133,7 +133,7 @@ class OverviewTests(unittest.TestCase):
         with mock.patch.object(help_text, "HELP_TOPICS", scrambled):
             lines = help_text.overview_lines()
 
-        start = lines.index("WOS commands:") + 1
+        start = lines.index("Auralis commands:") + 1
         names = [line.split()[0] for line in lines[start:] if line.strip()][:5]
 
         self.assertEqual(
@@ -148,7 +148,7 @@ class OverviewTests(unittest.TestCase):
 
     def test_each_line_has_a_summary(self):
         lines = help_text.overview_lines()
-        start = lines.index("WOS commands:") + 1
+        start = lines.index("Auralis commands:") + 1
 
         for line in lines[start:]:
             if not line.strip():
@@ -165,7 +165,7 @@ class OverviewTests(unittest.TestCase):
 
     def test_columns_line_up(self):
         lines = help_text.overview_lines()
-        start = lines.index("WOS commands:") + 1
+        start = lines.index("Auralis commands:") + 1
         columns = set()
 
         for line in lines[start:]:
