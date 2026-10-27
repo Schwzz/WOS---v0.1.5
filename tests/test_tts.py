@@ -209,7 +209,7 @@ class DisabledTests(WithKey):
         post = FakePost()
         speaker = make_speaker(post=post)
 
-        for text in (None, "", "   \n", 42, "WOS: something failed",
+        for text in (None, "", "   \n", 42, "Auralis: something failed", "WOS: legacy error",
                      "I couldn't save this exchange: disk full"):
             with self.subTest(text=text):
                 self.assertFalse(speaker.speak(text))

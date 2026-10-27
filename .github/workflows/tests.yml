@@ -1,4 +1,4 @@
-name: WOS checks
+name: Auralis checks
 on:
   push:
   pull_request:
@@ -23,4 +23,5 @@ jobs:
       - run: python -m unittest discover -s tests -t .
       - run: node --check overlay/web/chat.js
       - run: node --check overlay/web/sage.js
+      - run: node tests/js/chat_harness.js
       - run: node tests/js/avatar_harness.js

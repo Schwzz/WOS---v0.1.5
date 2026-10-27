@@ -1,6 +1,6 @@
-"""Shared helpers for the WOS tests.
+"""Shared helpers for the Auralis tests.
 
-The tests use only the standard library. Every file WOS reads or writes is
+The tests use only the standard library. Every file Auralis reads or writes is
 redirected into a temporary folder, so your real config.json, characters and
 saved chats are never touched, and no API key or network is needed.
 """
@@ -67,7 +67,7 @@ DEFAULT_SETTINGS = {
 
 
 class Sandbox:
-    """A temporary WOS project folder with all module paths redirected to it."""
+    """A temporary Auralis project folder with all module paths redirected to it."""
 
     def __init__(self, max_chats=5, config_data=None):
         self.max_chats = max_chats

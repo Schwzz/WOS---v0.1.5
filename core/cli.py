@@ -3,7 +3,7 @@ import difflib
 import re
 
 
-# Every slash command WOS understands. Keep this in sync with show_help()
+# Every slash command Auralis understands. Keep this in sync with show_help()
 # and the command handling in start.py.
 KNOWN_COMMANDS = (
     "/new",
@@ -38,7 +38,7 @@ def read_input(prompt, reader=None):
     or the input ended (EOF).
 
     This lets prompts inside commands be cancelled safely instead of
-    crashing WOS with a traceback.
+    crashing Auralis with a traceback.
     """
     if reader is None:
         reader = builtins.input
@@ -76,7 +76,7 @@ def select_option(
     options       The items to show. Each one is displayed with str(); line
                   breaks inside a label are flattened so the list stays tidy.
     title         Optional heading, printed with a dashed underline like the
-                  other WOS lists.
+                  other Auralis lists.
     prompt        Replaces the default prompt text.
     allow_cancel  If True, pressing Enter or typing 0 cancels. If False, the
                   user must pick a number.
@@ -94,7 +94,7 @@ def select_option(
         writer = builtins.print
 
     if not options:
-        writer("WOS: There is nothing to choose from.")
+        writer("Auralis: There is nothing to choose from.")
         return None
 
     count = len(options)
@@ -116,14 +116,14 @@ def select_option(
         range_text = "1" if count == 1 else f"1-{count}"
 
         if allow_cancel:
-            prompt = f"WOS: Enter a number ({range_text}, Enter or 0 to cancel): "
+            prompt = f"Auralis: Enter a number ({range_text}, Enter or 0 to cancel): "
         else:
-            prompt = f"WOS: Enter a number ({range_text}): "
+            prompt = f"Auralis: Enter a number ({range_text}): "
 
     if count == 1:
-        invalid_message = "WOS: Please enter 1."
+        invalid_message = "Auralis: Please enter 1."
     else:
-        invalid_message = f"WOS: Please enter a number from 1 to {count}."
+        invalid_message = f"Auralis: Please enter a number from 1 to {count}."
 
     while True:
         answer = read_input(prompt, reader)
@@ -151,7 +151,7 @@ def select_option(
 
 
 def check_unrecognized_command(message):
-    """Return an error message if the text looks like a command that WOS
+    """Return an error message if the text looks like a command that Auralis
     did not handle, or None if it should be treated as normal chat.
 
     Call this only after every known command has had its chance to run.
@@ -165,7 +165,7 @@ def check_unrecognized_command(message):
 
     if word in KNOWN_COMMANDS:
         return (
-            f"WOS: '{word}' was not used correctly. "
+            f"Auralis: '{word}' was not used correctly. "
             "Type /help to see how to use it."
         )
 
@@ -176,6 +176,6 @@ def check_unrecognized_command(message):
     hint = f" Did you mean {matches[0]}?" if matches else ""
 
     return (
-        f"WOS: Unknown command '{word}'.{hint} "
+        f"Auralis: Unknown command '{word}'.{hint} "
         "Type /help to see available commands."
     )

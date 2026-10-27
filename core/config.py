@@ -44,8 +44,8 @@ def get_suggested_models(config, provider):
     """Model names the user listed for a provider under "suggested_models" in
     config.json, for example {"cloud": ["some-model-id"]}.
 
-    WOS ships no model list of its own, because model names change. Anything
-    that is not a valid model name is ignored rather than stopping WOS.
+    Auralis ships no model list of its own, because model names change. Anything
+    that is not a valid model name is ignored rather than stopping Auralis.
     """
     suggestions = config.get("suggested_models") if isinstance(config, dict) else None
     listed = suggestions.get(provider) if isinstance(suggestions, dict) else None
@@ -71,7 +71,7 @@ def format_provider_list():
 def validate_model_name(model):
     """Return the cleaned model name or raise ValueError.
 
-    This checks the format only. WOS cannot know offline whether a provider
+    This checks the format only. Auralis cannot know offline whether a provider
     actually offers the model, but it can reject empty values, placeholders such
     as <model_name>, and anything that cannot be a model name.
     """
@@ -132,8 +132,8 @@ def validate_character_choice(character_id):
     except ValueError as error:
         message = str(error)
 
-        if message.startswith("WLLM: "):
-            message = message[len("WLLM: "):]
+        if message.startswith("Auralis: "):
+            message = message[len("Auralis: "):]
 
         raise ValueError(message)
 
@@ -239,7 +239,7 @@ DEFAULT_SETTINGS = {
 }
 
 # Optional text-to-speech. Kept out of DEFAULT_SETTINGS on purpose: a damaged
-# "tts" value must never stop WOS from starting, so it is passed through as
+# "tts" value must never stop Auralis from starting, so it is passed through as
 # saved and core.tts falls back to these defaults for anything invalid.
 DEFAULT_TTS_SETTINGS = {
     "enabled": False,
@@ -248,7 +248,7 @@ DEFAULT_TTS_SETTINGS = {
 }
 
 # Desktop overlay (WOS-Overlay). Passed through like "tts": a damaged value
-# must never stop WOS, so core.overlay validates it and falls back.
+# must never stop Auralis, so core.overlay validates it and falls back.
 DEFAULT_OVERLAY_SETTINGS = {
     "port": 47615
 }

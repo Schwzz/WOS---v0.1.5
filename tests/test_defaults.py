@@ -207,7 +207,7 @@ class NewChatUsesDefaultsTests(unittest.TestCase):
             self.assertEqual((session.provider, session.model),
                              ("ollama", "llama3"))
 
-            # Starting WOS again resumes the active chat, not the defaults.
+            # Starting Auralis again resumes the active chat, not the defaults.
             resumed = sandbox.make_session()
             self.assertEqual(resumed.session_id, first_id)
             self.assertEqual((resumed.provider, resumed.model),

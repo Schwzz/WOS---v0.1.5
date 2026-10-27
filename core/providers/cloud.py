@@ -19,15 +19,15 @@ def chat(model, messages):
 
     if not api_key:
         print(
-            "WLLM: GEMINI_API_KEY was not found. Copy .env.txt to .env, "
-            "add your own key, and restart WOS."
+            "Auralis: GEMINI_API_KEY was not found. Copy .env.txt to .env, "
+            "add your own key, and restart Auralis."
         )
         return None
 
     if api_key.strip() == PLACEHOLDER_API_KEY:
         print(
-            "WLLM: GEMINI_API_KEY is still the placeholder value. "
-            "Replace it in .env with your own key and restart WOS."
+            "Auralis: GEMINI_API_KEY is still the placeholder value. "
+            "Replace it in .env with your own key and restart Auralis."
         )
         return None
 
@@ -42,7 +42,7 @@ def chat(model, messages):
             content = message.get("content")
 
             if not isinstance(content, str):
-                print("WLLM: A message contains invalid content.")
+                print("Auralis: A message contains invalid content.")
                 return None
 
             if role == "system":
@@ -63,7 +63,7 @@ def chat(model, messages):
                 )
 
         if not contents:
-            print("WLLM: There are no messages to send.")
+            print("Auralis: There are no messages to send.")
             return None
 
         response = client.models.generate_content(
@@ -82,11 +82,11 @@ def chat(model, messages):
         reply = response.text
 
         if not isinstance(reply, str) or not reply.strip():
-            print("WLLM: Gemini returned an empty response.")
+            print("Auralis: Gemini returned an empty response.")
             return None
 
         return reply.strip()
 
     except Exception as error:
-        print(f"WLLM: Gemini request failed ({type(error).__name__}). Check the key, model, connection and quota.")
+        print(f"Auralis: Gemini request failed ({type(error).__name__}). Check the key, model, connection and quota.")
         return None

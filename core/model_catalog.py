@@ -30,7 +30,7 @@ def list_gemini_models(get=None, api_key=None):
     """Fetch every page, retaining models that support generateContent."""
     key = api_key or gemini_key()
     if not key:
-        raise ModelDiscoveryError("Set GEMINI_API_KEY in .env and restart WOS to discover models.")
+        raise ModelDiscoveryError("Set GEMINI_API_KEY in .env and restart Auralis to discover models.")
     get = get or requests.get
     found, seen, page = {}, set(), None
     for _ in range(100):
@@ -80,7 +80,7 @@ def list_remote_models(provider, get=None, key=None):
     info = PROVIDERS[provider]
     key = key or api_key(provider)
     if not key:
-        raise ModelDiscoveryError(f"Set {info['key_env']} in .env and restart WOS to discover models.")
+        raise ModelDiscoveryError(f"Set {info['key_env']} in .env and restart Auralis to discover models.")
     endpoint = '/models/user' if provider == 'openrouter' else '/language-models' if provider == 'xai' else '/models'
     found, seen, page = {}, set(), None
     deadline = time.monotonic() + 45

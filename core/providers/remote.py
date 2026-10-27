@@ -12,7 +12,7 @@ def chat(provider, model, messages, post=None):
     info = PROVIDERS[provider]
     key = api_key(provider)
     if not key:
-        raise ProviderError(f"Set {info['key_env']} in .env and restart WOS.")
+        raise ProviderError(f"Set {info['key_env']} in .env and restart Auralis.")
     if not isinstance(messages, list) or not messages or any(
         not isinstance(m, dict) or m.get('role') not in ('system', 'user', 'assistant')
         or not isinstance(m.get('content'), str) for m in messages

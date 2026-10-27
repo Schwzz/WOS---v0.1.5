@@ -1,4 +1,4 @@
-/* WOS Companion renderer. Phase is integrated over time so changing speed
+/* Auralis Companion renderer. Phase is integrated over time so changing speed
  * never jumps the pulse. window.Sage stays compatible with the backend bridge. */
 (() => {
   'use strict';

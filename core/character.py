@@ -22,11 +22,11 @@ SUPPORTED_TERMINAL_COLORS = {
 
 def validate_character_id(character_id):
     if not isinstance(character_id, str):
-        raise ValueError("WLLM: Character ID must be a string.")
+        raise ValueError("Auralis: Character ID must be a string.")
 
     if not CHARACTER_ID_PATTERN.fullmatch(character_id):
         raise ValueError(
-            f"WLLM: Invalid character ID '{character_id}'. "
+            f"Auralis: Invalid character ID '{character_id}'. "
             "Use only letters, numbers, underscores, and hyphens."
         )
 
@@ -34,7 +34,7 @@ def validate_character_id(character_id):
 def validate_character(character_id, character):
     if not isinstance(character, dict):
         raise ValueError(
-            f"WLLM: Character '{character_id}' must contain a JSON object."
+            f"Auralis: Character '{character_id}' must contain a JSON object."
         )
 
     name = character.get("name")
@@ -42,14 +42,14 @@ def validate_character(character_id, character):
 
     if not isinstance(name, str) or not name.strip():
         raise ValueError(
-            f"WLLM: Character '{character_id}' must have a "
+            f"Auralis: Character '{character_id}' must have a "
             "non-empty string for 'name'."
         )
 
     if isinstance(personality, str):
         if not personality.strip():
             raise ValueError(
-                f"WLLM: Character '{character_id}' must have a "
+                f"Auralis: Character '{character_id}' must have a "
                 "non-empty string or object for 'personality'."
             )
 
@@ -58,13 +58,13 @@ def validate_character(character_id, character):
 
         if not isinstance(core, str) or not core.strip():
             raise ValueError(
-                f"WLLM: Character '{character_id}' must have a "
+                f"Auralis: Character '{character_id}' must have a "
                 "non-empty string for 'personality.core'."
             )
 
     else:
         raise ValueError(
-            f"WLLM: Character '{character_id}' must have a "
+            f"Auralis: Character '{character_id}' must have a "
             "non-empty string or object for 'personality'."
         )
 
@@ -80,7 +80,7 @@ def validate_character(character_id, character):
 
         if value is not None and not isinstance(value, dict):
             raise ValueError(
-                f"WLLM: Character '{character_id}' field '{field}' "
+                f"Auralis: Character '{character_id}' field '{field}' "
                 "must be a JSON object."
             )
 
@@ -93,7 +93,7 @@ def validate_character(character_id, character):
     ):
         supported = ", ".join(sorted(SUPPORTED_TERMINAL_COLORS))
         raise ValueError(
-            f"WLLM: Character '{character_id}' has an unsupported "
+            f"Auralis: Character '{character_id}' has an unsupported "
             f"terminal name color. Choose from: {supported}."
         )
 
@@ -102,7 +102,7 @@ def validate_character(character_id, character):
 
         if not isinstance(greeting, str):
             raise ValueError(
-                f"WLLM: Character '{character_id}' field 'greeting' "
+                f"Auralis: Character '{character_id}' field 'greeting' "
                 "must be a string."
             )
 
@@ -121,12 +121,12 @@ def load_character(character_id):
 
     except FileNotFoundError as error:
         raise FileNotFoundError(
-            f"WLLM: Character '{character_id}' was not found."
+            f"Auralis: Character '{character_id}' was not found."
         ) from error
 
     except json.JSONDecodeError as error:
         raise ValueError(
-            f"WLLM: Character '{character_id}' contains invalid JSON "
+            f"Auralis: Character '{character_id}' contains invalid JSON "
             f"(line {error.lineno}, column {error.colno})."
         ) from error
 
@@ -220,8 +220,8 @@ def _skip_reason(error, character_id):
 
     message = str(error)
 
-    if message.startswith("WLLM: "):
-        message = message[len("WLLM: "):]
+    if message.startswith("Auralis: "):
+        message = message[len("Auralis: "):]
 
     prefix = f"Character '{character_id}' "
 

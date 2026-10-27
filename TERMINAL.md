@@ -1,9 +1,10 @@
-# WOS terminal
+# Auralis terminal
 
-WOS now opens a full-screen terminal interface with a fixed composer, Markdown
-conversation, searchable menus, slash-command completion, status bar, and saved
-chat sidebar. The layout takes inspiration from OpenCode; it uses WOS's existing
-Python session and commands. The Companion remains another view of that session.
+Auralis opens a full-screen terminal with a quiet conversation view, teal and
+amber colors, a compact composer, slash completion, and searchable menus. The
+chat sidebar starts hidden (Ctrl+B). Provider/model details and extra shortcuts
+live in that optional sidebar rather than repeating below every conversation.
+The Companion remains another view of the same Python session.
 
 ## Run
 
@@ -17,7 +18,7 @@ serve the Companion too. `run.bat` launches both as before and forwards options.
 `--tui` explicitly requests the full-screen interface; `--plain` keeps the basic
 line prompt. Redirected/piped input uses the basic prompt automatically.
 
-If Textual is missing, WOS explains how to install it and falls back to the basic
+If Textual is missing, Auralis explains how to install it and falls back to the basic
 prompt. Existing chats, memory, characters, provider keys, and voice settings are
 reused. The terminal does not create a second conversation or voice player.
 
@@ -43,21 +44,26 @@ what you typed.
 | F6 | Toggle saved voice output |
 | Escape | Dismiss suggestions, cancel a picker/prompt, or stop speech |
 | Ctrl+C | Cancel a picker/prompt and stop current/pending speech |
-| Ctrl+Q or `/exit` | Close WOS and stop speech |
+| Ctrl+Q or `/exit` | Close Auralis and stop speech |
 | PageUp / PageDown | Scroll the conversation |
 | Ctrl+B | Show/hide the chat sidebar; hidden automatically in narrow windows |
 | Ctrl+T | Switch light/dark terminal theme |
-| Ctrl+L | Hide command output; does not erase the conversation |
+| Ctrl+L | Dismiss the current notice; keep activity details and chat |
+| F8 | Open/close activity details without losing your draft |
 
 Menus support filtering, mouse selection, Enter, and Escape. Destructive actions
 such as clearing a conversation still require confirmation, with Cancel focused
-by default. Command output appears in a bounded scrollable panel.
+by default. Command output no longer takes up a panel above the composer. A one-line notice
+appears for eight seconds; choose **Details F8** or press **F8** at any time to
+read the latest 500 lines of activity in a separate dialog. Escape returns to
+your draft. The activity journal is kept in memory until you quit; it is not
+saved to disk. Ctrl+L dismisses a notice without deleting the journal.
 
 You can type the next draft while a reply loads. Sending and session-changing
 commands wait for the current action to finish, avoiding accidental double sends
 or applying a model to the wrong chat. A failed reply restores the submitted text
 when the composer is empty. If you already typed a next draft, that draft stays
-in place and the unsent message is shown in command output. No automatic retry
+in place and the unsent message is retained in activity details (F8). No automatic retry
 is performed. Drafts are kept separately per chat while
 the terminal is open. Reading position survives background conversation updates;
 scroll to the top and use **Load earlier messages** for older history.
@@ -104,8 +110,8 @@ node tests/js/chat_harness.js
 node tests/js/avatar_harness.js
 ```
 
-The combined suite passes **570 tests**, including 22 new terminal regressions.
-The new headless Textual tests exercise actual key events and the existing WOS
+The complete suite passes **574 tests**, including 26 terminal tests.
+The new headless Textual tests exercise actual key events and the existing Auralis
 command loop with temporary chats and fake provider responses. They cover
 completion, filtering, provider/model selection, destructive confirmations, draft
 switching, multiline messages, responsive layouts, earlier history, background
@@ -123,6 +129,9 @@ the terminal content; the surrounding terminal window depends on your terminal.
 ![Slash-command popup](docs/terminal-commands.png)
 ![Conversation](docs/terminal-chat.png)
 ![Searchable model picker](docs/terminal-picker.png)
+![Brief notice](docs/terminal-notice.png)
+![Activity details](docs/terminal-details.png)
+![Light theme](docs/terminal-light.png)
 
 The SVG originals are in `docs/`. Regenerate them with
 `python -m tests.terminal_preview` (no provider requests).

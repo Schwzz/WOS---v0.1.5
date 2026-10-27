@@ -1,6 +1,6 @@
-"""Optional Fish Audio text-to-speech for WOS.
+"""Optional Fish Audio text-to-speech for Auralis.
 
-Nothing in here may ever stop WOS or delay a text reply:
+Nothing in here may ever stop Auralis or delay a text reply:
 
 * speak() never raises, and does its network and audio work on a background
   thread, so the reply is already on screen and the prompt stays usable.
@@ -31,7 +31,7 @@ REQUEST_TIMEOUT_SECONDS = 30
 
 # send_message() returns a few failures as ordinary reply text (for example
 # "I couldn't save this exchange: ..."). Those are errors, not speech.
-_NON_SPEECH_PREFIXES = ("WOS:", "I couldn't save")
+_NON_SPEECH_PREFIXES = ("WOS:", "Auralis:", "I couldn't save")
 
 
 class TTSError(Exception):
@@ -554,7 +554,7 @@ class FishAudioSpeaker:
 
     def _notice(self, reason):
         """Tell the user once per distinct problem, never raising."""
-        message = f"WOS: Voice unavailable: {reason}."
+        message = f"Auralis: Voice unavailable: {reason}."
 
         with self._lock:
             if message == self._last_notice:

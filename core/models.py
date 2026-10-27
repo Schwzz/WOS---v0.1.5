@@ -70,7 +70,7 @@ def menu_models(provider, installed, known):
     """The model names to offer in a menu.
 
     For Ollama, the models really installed on this computer, if they could
-    be fetched. Otherwise (and for every other provider) the model names WOS
+    be fetched. Otherwise (and for every other provider) the model names Auralis
     already knows about.
     """
     if provider == "ollama" and installed is not None:

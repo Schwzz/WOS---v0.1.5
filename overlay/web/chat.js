@@ -1,4 +1,4 @@
-/* Shared WOS session controls. Credentials stay in the Python process.
+/* Shared Auralis session controls. Credentials stay in the Python process.
  * Message identifiers make a retry safe when a response was lost in transit. */
 (() => {
   'use strict';
@@ -148,7 +148,7 @@
         data = await res.json();
       } catch (_) {}
       if (!res.ok) {
-        const err = new Error((data && data.error) || `WOS returned HTTP ${res.status}.`);
+        const err = new Error((data && data.error) || `Auralis returned HTTP ${res.status}.`);
         err.status = res.status;
         throw err;
       }
@@ -157,8 +157,8 @@
       if (err.status) throw err;
       const failure = new Error(
         err.name === 'AbortError'
-          ? 'WOS took too long to respond. Check the connection and try again.'
-          : 'Connection to WOS was lost. Reconnecting…',
+          ? 'Auralis took too long to respond. Check the connection and try again.'
+          : 'Connection to Auralis was lost. Reconnecting…',
       );
       failure.uncertain = true;
       throw failure;
@@ -305,7 +305,7 @@
     voiceBtn.setAttribute('aria-pressed', String(on));
     voiceBtn.title =
       on && !voice.available
-        ? 'Set FISH_AUDIO_API_KEY in .env and restart WOS'
+        ? 'Set FISH_AUDIO_API_KEY in .env and restart Auralis'
         : 'Speak future replies aloud';
   }
   voiceBtn.addEventListener('click', async () => {
@@ -382,7 +382,7 @@
       }
       if (uncertain) {
         uncertain = null;
-        notice('WOS changed sessions. Check the conversation before resending your draft.');
+        notice('Auralis changed sessions. Check the conversation before resending your draft.');
       }
       resetHistory();
       chatVersion = -1;
@@ -450,8 +450,8 @@
     Sage.setAudioLevel(0);
     Sage.setState('idle');
     lastState = 'idle';
-    Sage.setStatus(everLinked ? 'backend offline' : 'waiting for WOS');
-    notice('Waiting for the WOS terminal to reconnect.');
+    Sage.setStatus(everLinked ? 'backend offline' : 'waiting for Auralis');
+    notice('Waiting for the Auralis terminal to reconnect.');
     // Keep the window/draft open during slow restarts instead of destroying it.
   }
   async function poll() {
@@ -663,7 +663,7 @@
     const pin = $('btn-pin');
     if (!pin || !state || typeof state.on_top !== 'boolean') return;
     pin.setAttribute('aria-pressed', String(state.on_top));
-    pin.title = state.on_top ? 'Unpin: allow other windows in front' : 'Pin: keep WOS above other windows';
+    pin.title = state.on_top ? 'Unpin: allow other windows in front' : 'Pin: keep Auralis above other windows';
     pin.setAttribute('aria-label', pin.title);
   }
   listen('btn-pin', 'click', async () => {
@@ -749,7 +749,7 @@
   }
   renderVoice();
   controls();
-  Sage.setStatus('waiting for WOS');
+  Sage.setStatus('waiting for Auralis');
   requestAnimationFrame(drive);
   poll();
 })();

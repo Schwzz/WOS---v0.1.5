@@ -95,7 +95,7 @@ class TerminalBridge:
     def choose(self, options, title=None, prompt=None, allow_cancel=True, **_):
         choices = [' '.join(str(option).split()) for option in options]
         if not choices:
-            self.write('WOS: There is nothing to choose from.')
+            self.write('Auralis: There is nothing to choose from.')
             return None
         return self.ask(Prompt(title or 'Choose an option', choices, allow_cancel))
 
@@ -119,7 +119,7 @@ class TerminalBridge:
                 if not self.closed.is_set():
                     ns['choose_new_cloud_key_model']()
             except Exception as error:
-                self.write(f'WOS: Model setup failed ({type(error).__name__}). Use /model to retry.')
+                self.write(f'Auralis: Model setup failed ({type(error).__name__}). Use /model to retry.')
             finally:
                 self.backend.release_command()
             while not self.closed.is_set():
@@ -129,11 +129,11 @@ class TerminalBridge:
                 except Exception as error:
                     # Keep an unexpected command error from killing the UI.
                     # Raw exception text may contain a provider key or request.
-                    self.write(f'WOS: Command failed ({type(error).__name__}). Try again.')
+                    self.write(f'Auralis: Command failed ({type(error).__name__}). Try again.')
                 finally:
                     self.backend.release_command()
         except Exception as error:
-            self.write(f'WOS: Terminal setup failed ({type(error).__name__}). Restart with --plain.')
+            self.write(f'Auralis: Terminal setup failed ({type(error).__name__}). Restart with --plain.')
         finally:
             self.backend.release_command()
             ns.update(original)

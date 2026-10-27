@@ -70,14 +70,14 @@ def load_memory():
 
         if not _is_valid_memory(data):
             _MEMORY_FILE_INVALID = True
-            print("WOS: Memory file contains invalid data.")
+            print("Auralis: Memory file contains invalid data.")
             return []
 
         return _deduplicate_memory(data)
 
     except (json.JSONDecodeError, OSError) as error:
         _MEMORY_FILE_INVALID = True
-        print(f"WOS: Could not load memory: {error}")
+        print(f"Auralis: Could not load memory: {error}")
         return []
 
 
@@ -485,7 +485,7 @@ def _delete_memory_item(memory, item, success_message):
         save_memory(memory)
     except (OSError, ValueError) as error:
         memory[:] = original_memory
-        print(f"WOS: Could not save memory changes: {error}")
+        print(f"Auralis: Could not save memory changes: {error}")
         return "I couldn't save that change, so the memory was not deleted."
 
     return success_message
@@ -625,7 +625,7 @@ def edit_memory(memory, target, new_value):
         save_memory(memory)
     except (OSError, ValueError) as error:
         memory[:] = original_memory
-        print(f"WOS: Could not save memory changes: {error}")
+        print(f"Auralis: Could not save memory changes: {error}")
         return "I couldn't save that change, so the memory was not edited."
 
     return "Memory updated successfully."
@@ -643,7 +643,7 @@ def clear_memory(memory, confirmed=False):
         save_memory(memory)
     except (OSError, ValueError) as error:
         memory[:] = original_memory
-        print(f"WOS: Could not clear memories: {error}")
+        print(f"Auralis: Could not clear memories: {error}")
         return "I couldn't save that change, so the memories were not cleared."
 
     return "All saved memories have been cleared."
